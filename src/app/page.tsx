@@ -55,10 +55,9 @@ function linkLabel(url: string) {
 const NOW = Date.now();
 
 export default async function HomePage() {
-  const [tasks, notes, events, subscriptions, bookmarks] = await Promise.all([
+  const [tasks, notes, subscriptions, bookmarks] = await Promise.all([
     prisma.task.findMany({ orderBy: { dueDate: "asc" }, take: 4 }),
     prisma.note.findMany({ orderBy: { updatedAt: "desc" }, take: 3 }),
-    prisma.event.findMany({ orderBy: { date: "asc" }, take: 3 }),
     prisma.subscription.findMany({ orderBy: { renewalDate: "asc" }, take: 4 }),
     prisma.bookmark.findMany({ take: 3, orderBy: { createdAt: "desc" } }),
   ]);
@@ -94,11 +93,6 @@ export default async function HomePage() {
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard title="Open tasks" value={openTasks} hint={`${dueSoon} due soon`} />
-        <StatCard
-          title="Upcoming events"
-          value={events.length}
-          hint={events[0] ? formatDate(events[0].date) : "Nothing scheduled"}
-        />
         <StatCard
           title="Subscriptions"
           value={`$${monthlySpend.toFixed(2)}/mo`}
@@ -229,46 +223,6 @@ export default async function HomePage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming</CardTitle>
-            <CardDescription>Events on deck.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {events.map((event) => (
-              <div
-                key={event.id}
-                className="flex items-center justify-between rounded-lg border bg-card/60 px-3 py-2"
-              >
-                <div>
-                  <p className="font-medium">{event.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(event.date)} {event.location ? `· ${event.location}` : ""}
-                  </p>
-                </div>
-                <Badge variant="outline">Event</Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent notes</CardTitle>
-            <CardDescription>Latest captures.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {notes.map((note) => (
-              <div key={note.id} className="rounded-lg border bg-card/60 px-3 py-2">
-                <p className="font-medium">{note.title}</p>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {note.content}
-                </p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

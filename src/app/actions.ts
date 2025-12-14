@@ -4,7 +4,9 @@ import { Buffer } from "buffer";
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
+import { syncNoteLinks } from "@/lib/note-links";
 import { deleteRecord, upsertRecord } from "@/lib/records";
+import { deleteReminder, upsertReminder } from "@/lib/reminders";
 
 const revalidate = (...paths: string[]) => paths.forEach((path) => revalidatePath(path));
 
@@ -44,6 +46,7 @@ export async function createTask(formData: FormData) {
   const dueDateRaw = String(formData.get("dueDate") ?? "");
   const dueDate = dueDateRaw ? new Date(dueDateRaw) : undefined;
   const notes = String(formData.get("notes") ?? "").trim();
+  const reminderAt = dueDate ? new Date(dueDate.getTime() - 24 * 60 * 60 * 1000) : null;
 
   const task = await prisma.task.create({
     data: {
@@ -64,7 +67,18 @@ export async function createTask(formData: FormData) {
     metadata: { dueDate, status, notes },
   });
 
-  revalidate("/", "/tasks", "/calendar");
+  if (reminderAt) {
+    await upsertReminder({
+      kind: "task",
+      source: "task",
+      sourceId: task.id,
+      triggerAt: reminderAt,
+      title: "Task due soon",
+      message: `${title} is due ${dueDate?.toDateString()}`,
+    });
+  }
+
+  revalidate("/", "/tasks");
 }
 
 export async function updateTaskStatus(formData: FormData) {
@@ -89,7 +103,7 @@ export async function updateTaskStatus(formData: FormData) {
     });
   }
 
-  revalidate("/", "/tasks", "/calendar");
+  revalidate("/", "/tasks");
 }
 
 export async function updateTask(formData: FormData) {
@@ -100,6 +114,7 @@ export async function updateTask(formData: FormData) {
   const dueDateRaw = String(formData.get("dueDate") ?? "");
   const notes = String(formData.get("notes") ?? "").trim();
   const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
+  const reminderAt = dueDate ? new Date(dueDate.getTime() - 24 * 60 * 60 * 1000) : null;
 
   if (!id || !title) return;
 
@@ -117,7 +132,20 @@ export async function updateTask(formData: FormData) {
     metadata: { dueDate: task.dueDate, status: task.status, notes: task.notes },
   });
 
-  revalidate("/", "/tasks", "/calendar");
+  if (reminderAt) {
+    await upsertReminder({
+      kind: "task",
+      source: "task",
+      sourceId: task.id,
+      triggerAt: reminderAt,
+      title: "Task due soon",
+      message: `${task.title} is due ${task.dueDate?.toDateString()}`,
+    });
+  } else {
+    await deleteReminder("task", task.id);
+  }
+
+  revalidate("/", "/tasks");
 }
 
 export async function deleteTask(formData: FormData) {
@@ -125,7 +153,8 @@ export async function deleteTask(formData: FormData) {
   if (!id) return;
   await prisma.task.delete({ where: { id } });
   await deleteRecord("task", String(id));
-  revalidate("/", "/tasks", "/calendar");
+  await deleteReminder("task", id);
+  revalidate("/", "/tasks");
 }
 
 export async function createNote(formData: FormData) {
@@ -144,6 +173,8 @@ export async function createNote(formData: FormData) {
     title,
     content,
   });
+
+  await syncNoteLinks(note.id, content);
 
   revalidate("/", "/notes");
 }
@@ -167,6 +198,8 @@ export async function updateNote(formData: FormData) {
     content,
   });
 
+  await syncNoteLinks(id, content);
+
   revalidate("/", "/notes");
 }
 
@@ -178,9 +211,7 @@ export async function toggleTimer(formData: FormData) {
   if (!timer) return;
 
   const running = !timer.running;
-  const endsAt = running
-    ? new Date(Date.now() + timer.durationMinute * 60 * 1000)
-    : null;
+  const endsAt = running ? new Date(Date.now() + timer.durationMinute * 60 * 1000) : null;
 
   await prisma.timer.update({
     where: { id },
@@ -191,6 +222,19 @@ export async function toggleTimer(formData: FormData) {
       completed: false,
     },
   });
+
+  if (running && endsAt) {
+    await upsertReminder({
+      kind: "timer",
+      source: "timer",
+      sourceId: id,
+      triggerAt: endsAt,
+      title: "Timer finished",
+      message: `${timer.label} completed`,
+    });
+  } else {
+    await deleteReminder("timer", id);
+  }
 
   revalidate("/timers");
 }
@@ -226,6 +270,7 @@ export async function deleteTimer(formData: FormData) {
   if (!id) return;
   await prisma.timer.delete({ where: { id } });
   await deleteRecord("timer", String(id));
+  await deleteReminder("timer", id);
   revalidate("/timers");
 }
 
@@ -355,6 +400,21 @@ export async function refreshBookmarkFavicon(formData: FormData) {
   revalidate("/bookmarks");
 }
 
+export async function refreshAllBookmarkFavicons() {
+  const bookmarks = await prisma.bookmark.findMany();
+  for (const bookmark of bookmarks) {
+    const { faviconUrl, faviconData } = await fetchFaviconData(bookmark.url);
+    await prisma.bookmark.update({
+      where: { id: bookmark.id },
+      data: {
+        faviconUrl: faviconUrl ?? bookmark.faviconUrl,
+        faviconData: faviconData ?? bookmark.faviconData,
+      },
+    });
+  }
+  revalidate("/bookmarks");
+}
+
 export async function createSubscription(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const amount = Number(formData.get("amount"));
@@ -365,11 +425,13 @@ export async function createSubscription(formData: FormData) {
   const note = String(formData.get("note") ?? "").trim() || null;
   if (!name || Number.isNaN(amount) || !renewalRaw || !cardName) return;
 
+  const renewalDate = new Date(renewalRaw);
+
   const subscription = await prisma.subscription.create({
     data: {
       name,
       amount,
-      renewalDate: new Date(renewalRaw),
+      renewalDate,
       cardName,
       reminderDays: Number.isNaN(reminderDays) ? 3 : reminderDays,
       cadence,
@@ -387,6 +449,18 @@ export async function createSubscription(formData: FormData) {
     metadata: { amount, renewalDate: renewalRaw, cardName, reminderDays },
   });
 
+  const triggerAt = new Date(
+    renewalDate.getTime() - (Number.isNaN(reminderDays) ? 3 : reminderDays) * 24 * 60 * 60 * 1000,
+  );
+  await upsertReminder({
+    kind: "subscription",
+    source: "subscription",
+    sourceId: subscription.id,
+    triggerAt,
+    title: "Renewal reminder",
+    message: `${name} renews on ${renewalDate.toDateString()}`,
+  });
+
   revalidate("/finances");
 }
 
@@ -401,7 +475,7 @@ export async function updateSubscription(formData: FormData) {
   const note = String(formData.get("note") ?? "").trim() || null;
   if (!id || !name || Number.isNaN(amount) || !renewalRaw || !cardName) return;
 
-  await prisma.subscription.update({
+  const subscription = await prisma.subscription.update({
     where: { id },
     data: {
       name,
@@ -424,6 +498,19 @@ export async function updateSubscription(formData: FormData) {
     metadata: { amount, renewalDate: renewalRaw, cardName, reminderDays },
   });
 
+  const triggerAt = new Date(
+    new Date(renewalRaw).getTime() - (Number.isNaN(reminderDays) ? 3 : reminderDays) * 24 * 60 * 60 * 1000,
+  );
+
+  await upsertReminder({
+    kind: "subscription",
+    source: "subscription",
+    sourceId: subscription.id,
+    triggerAt,
+    title: "Renewal reminder",
+    message: `${subscription.name} renews on ${subscription.renewalDate.toDateString()}`,
+  });
+
   revalidate("/finances");
 }
 
@@ -432,5 +519,6 @@ export async function deleteSubscription(formData: FormData) {
   if (!id) return;
   await prisma.subscription.delete({ where: { id } });
   await deleteRecord("subscription", String(id));
+  await deleteReminder("subscription", id);
   revalidate("/finances");
 }

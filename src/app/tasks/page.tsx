@@ -36,6 +36,52 @@ type TasksPageProps = {
   searchParams?: { status?: string };
 };
 
+function TaskCreateDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2">
+          <span className="text-lg leading-none">+</span>
+          New task
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>New task</DialogTitle>
+        </DialogHeader>
+        <form action={createTask} className="grid gap-3">
+          <Input name="title" placeholder="Title" required />
+          <div className="grid grid-cols-2 gap-3">
+            <select
+              name="priority"
+              className="h-10 rounded-md border border-input bg-background px-2 text-sm"
+              defaultValue="normal"
+            >
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+            <select
+              name="status"
+              className="h-10 rounded-md border border-input bg-background px-2 text-sm"
+              defaultValue="todo"
+            >
+              <option value="todo">Todo</option>
+              <option value="in-progress">In progress</option>
+              <option value="blocked">Blocked</option>
+            </select>
+          </div>
+          <Input name="dueDate" type="date" />
+          <Textarea name="notes" placeholder="Notes (optional)" />
+          <DialogClose asChild>
+            <Button type="submit">Create task</Button>
+          </DialogClose>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default async function TasksPage({ searchParams }: TasksPageProps) {
   const statusFilter = searchParams?.status;
   const where =
@@ -55,63 +101,30 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       <PageHeader
         title="Tasks"
         description="Manage tasks with status, priority, and optional due dates."
-        actions={
-          <div className="flex items-center gap-2">
-            <form action={createTask} className="flex items-center gap-2">
-              <Input
-                name="title"
-                placeholder="New task title"
-                required
-                className="w-48"
-              />
-              <select
-                name="priority"
-                className="h-10 rounded-md border border-input bg-background px-2 text-sm"
-                defaultValue="normal"
-              >
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="low">Low</option>
-              </select>
-              <select
-                name="status"
-                className="h-10 rounded-md border border-input bg-background px-2 text-sm"
-                defaultValue="todo"
-              >
-                <option value="todo">Todo</option>
-                <option value="in-progress">In progress</option>
-                <option value="blocked">Blocked</option>
-              </select>
-              <Input name="dueDate" type="date" className="w-40" />
-              <Button type="submit" size="sm">
-                Add
-              </Button>
-            </form>
-            <form
-              method="get"
-              className="flex items-center gap-2 rounded-lg border bg-card/60 px-3 py-2"
-            >
-              <select
-                name="status"
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                defaultValue={statusFilter ?? "all"}
-              >
-                <option value="all">All</option>
-                <option value="todo">Todo</option>
-                <option value="in-progress">In progress</option>
-                <option value="blocked">Blocked</option>
-                <option value="done">Done</option>
-              </select>
-              <Button type="submit" size="sm" variant="secondary">
-                Filter
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/tasks">Reset</Link>
-              </Button>
-            </form>
-          </div>
-        }
+        actions={<TaskCreateDialog />}
       />
+
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card/60 px-3 py-2">
+        <form method="get" className="flex items-center gap-2">
+          <select
+            name="status"
+            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+            defaultValue={statusFilter ?? "all"}
+          >
+            <option value="all">All</option>
+            <option value="todo">Todo</option>
+            <option value="in-progress">In progress</option>
+            <option value="blocked">Blocked</option>
+            <option value="done">Done</option>
+          </select>
+          <Button type="submit" size="sm" variant="secondary">
+            Filter
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/tasks">Reset</Link>
+          </Button>
+        </form>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
         {["todo", "in-progress", "blocked", "done"].map((status) => (

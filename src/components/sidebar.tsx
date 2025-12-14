@@ -4,7 +4,6 @@ import type { ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CalendarDays,
   CheckSquare,
   Link as LinkIcon,
   Home,
@@ -30,12 +29,6 @@ export type NavItem = {
 export const navItems: NavItem[] = [
   { label: "Home", href: "/", icon: Home, description: "Overview" },
   { label: "Tasks", href: "/tasks", icon: CheckSquare, description: "Todos" },
-  {
-    label: "Calendar",
-    href: "/calendar",
-    icon: CalendarDays,
-    description: "Events",
-  },
   { label: "Notes", href: "/notes", icon: StickyNote, description: "Pages" },
   {
     label: "Bookmarks",

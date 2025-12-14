@@ -1,4 +1,4 @@
-import { createBookmark } from "@/app/actions";
+import { createBookmark, refreshAllBookmarkFavicons } from "@/app/actions";
 import { BookmarkGrid } from "@/components/bookmarks/grid";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -25,8 +25,20 @@ export default async function BookmarksPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Add bookmark</CardTitle>
-          <CardDescription>Store link + optional category. Favicons cached on save.</CardDescription>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle>Add bookmark</CardTitle>
+              <CardDescription>Store link + optional category. Favicons cached on save.</CardDescription>
+            </div>
+            <form action={refreshAllBookmarkFavicons}>
+              <button
+                type="submit"
+                className="h-9 rounded-md border px-3 text-sm font-medium text-muted-foreground transition hover:bg-muted"
+              >
+                Refresh all icons
+              </button>
+            </form>
+          </div>
         </CardHeader>
         <CardContent>
           <form action={createBookmark} className="grid gap-3 md:grid-cols-3">

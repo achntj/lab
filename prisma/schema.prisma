@@ -89,6 +89,23 @@ model Subscription {
   updatedAt     DateTime @updatedAt
 }
 
+model Reminder {
+  id         Int      @id @default(autoincrement())
+  kind       String
+  source     String
+  sourceId   String
+  triggerAt  DateTime
+  title      String
+  message    String
+  delivered  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([triggerAt, delivered])
+  @@index([source, sourceId])
+  @@unique([source, sourceId])
+}
+
 model Record {
   id        Int      @id @default(autoincrement())
   kind      String
@@ -104,6 +121,24 @@ model Record {
   updatedAt DateTime @updatedAt
 
   @@unique([source, sourceId])
+
+  sourceLinks RecordLink[] @relation("RecordSourceLinks")
+  targetLinks RecordLink[] @relation("RecordTargetLinks")
+}
+
+model RecordLink {
+  id        Int      @id @default(autoincrement())
+  sourceId  Int
+  targetId  Int
+  label     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  source Record @relation("RecordSourceLinks", fields: [sourceId], references: [id], onDelete: Cascade)
+  target Record @relation("RecordTargetLinks", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId, label])
+  @@index([targetId])
 }
 
 model Event {

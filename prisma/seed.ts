@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.recordLink.deleteMany();
   await prisma.record.deleteMany();
   await prisma.financeEntry.deleteMany();
   await prisma.subscription.deleteMany();
@@ -42,7 +43,11 @@ async function main() {
       },
       {
         title: "Ideas",
-        content: "Command palette actions, recurring habits, expense tagging.",
+        content: "Command palette actions, recurring habits, expense tagging. Link back to [[Meeting recap]] to keep context close.",
+      },
+      {
+        title: "Project Atlas",
+        content: "Kickoff next week. See [[Meeting recap]] for decisions and pull tasks from backlog.",
       },
     ],
   });
@@ -187,6 +192,36 @@ async function main() {
       })),
     ],
   });
+
+  const noteRecords = await prisma.record.findMany({
+    where: { source: "note", sourceId: { in: allNotes.map((n) => String(n.id)) } },
+  });
+
+  const recordByTitle = new Map(noteRecords.map((record) => [record.title, record]));
+  const noteLinks: { sourceId: number; targetId: number }[] = [];
+  const seen = new Set<string>();
+
+  allNotes.forEach((note) => {
+    const record = recordByTitle.get(note.title);
+    if (!record) return;
+    const matches = note.content.matchAll(/\[\[([^[\]]+)\]\]/g);
+    for (const match of matches) {
+      const targetTitle = match[1].trim();
+      if (!targetTitle) continue;
+      const target = recordByTitle.get(targetTitle);
+      if (target && target.id !== record.id) {
+        const key = `${record.id}-${target.id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          noteLinks.push({ sourceId: record.id, targetId: target.id });
+        }
+      }
+    }
+  });
+
+  if (noteLinks.length) {
+    await prisma.recordLink.createMany({ data: noteLinks });
+  }
 }
 
 main()
