@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { formatDateTime, nextMonthlyOccurrence, toTimeLocal } from "@/lib/datetime";
 
 type ReminderInput = {
   kind: string;
@@ -55,6 +56,35 @@ export async function fetchDueReminders() {
     where: { id: { in: reminders.map((r) => r.id) } },
     data: { delivered: true },
   });
+
+  for (const reminder of reminders) {
+    if (reminder.kind !== "subscription") continue;
+    const subscriptionId = Number(reminder.sourceId);
+    if (Number.isNaN(subscriptionId)) continue;
+    const subscription = await prisma.subscription.findUnique({ where: { id: subscriptionId } });
+    if (!subscription) continue;
+
+    const next = nextMonthlyOccurrence(
+      subscription.renewalDate.getDate(),
+      toTimeLocal(subscription.renewalDate),
+      new Date(subscription.renewalDate.getTime() + 60 * 1000),
+    );
+    if (!next) continue;
+
+    await prisma.subscription.update({
+      where: { id: subscription.id },
+      data: { renewalDate: next },
+    });
+
+    await prisma.reminder.update({
+      where: { id: reminder.id },
+      data: {
+        triggerAt: next,
+        delivered: false,
+        message: `${subscription.name} renews on ${formatDateTime(next)}`,
+      },
+    });
+  }
 
   return reminders;
 }

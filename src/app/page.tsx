@@ -10,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { formatDateTime } from "@/lib/datetime";
+import { extractNoteLinks } from "@/lib/note-links";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
@@ -39,9 +41,7 @@ function StatCard({
 
 function formatDate(value?: Date | null) {
   if (!value) return "No date";
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(
-    value,
-  );
+  return formatDateTime(value);
 }
 
 function linkLabel(url: string) {
@@ -53,6 +53,43 @@ function linkLabel(url: string) {
 }
 
 const NOW = Date.now();
+
+function renderNotePreview(content: string) {
+  const WIKI_LINK = /\[\[([^[\]]+)\]\]/g;
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = WIKI_LINK.exec(content)) !== null) {
+    const [full, title] = match;
+    if (match.index > last) {
+      parts.push(
+        <span key={`text-${match.index}`} className="break-words whitespace-pre-line">
+          {content.slice(last, match.index)}
+        </span>,
+      );
+    }
+    parts.push(
+      <span
+        key={`link-${match.index}`}
+        className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold text-foreground"
+      >
+        {title.trim()}
+      </span>,
+    );
+    last = match.index + full.length;
+  }
+
+  if (last < content.length) {
+    parts.push(
+      <span key="text-tail" className="break-words whitespace-pre-line">
+        {content.slice(last)}
+      </span>,
+    );
+  }
+
+  return parts;
+}
 
 export default async function HomePage() {
   const [tasks, notes, subscriptions, bookmarks] = await Promise.all([
@@ -154,9 +191,11 @@ export default async function HomePage() {
             {notes.map((note) => (
               <div key={note.id} className="rounded-lg border bg-muted/30 p-3">
                 <p className="font-medium">{note.title}</p>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {note.content}
-                </p>
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground line-clamp-3 break-words whitespace-pre-line">
+                    {renderNotePreview(note.content)}
+                  </div>
+                </div>
               </div>
             ))}
           </CardContent>

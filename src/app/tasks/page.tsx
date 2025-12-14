@@ -21,16 +21,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { formatDateTime, toDateTimeLocal } from "@/lib/datetime";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
-const formatDate = (date?: Date | null) =>
-  date
-    ? new Intl.DateTimeFormat("en", {
-        month: "short",
-        day: "numeric",
-      }).format(date)
-    : "No due date";
+const formatDate = (date?: Date | null) => formatDateTime(date) || "No due date";
 
 type TasksPageProps = {
   searchParams?: { status?: string };
@@ -71,7 +66,12 @@ function TaskCreateDialog() {
               <option value="blocked">Blocked</option>
             </select>
           </div>
-          <Input name="dueDate" type="date" />
+          <Input
+            name="dueDate"
+            type="datetime-local"
+            step="60"
+            placeholder="Due date & time (reminds at this time)"
+          />
           <Textarea name="notes" placeholder="Notes (optional)" />
           <DialogClose asChild>
             <Button type="submit">Create task</Button>
@@ -206,8 +206,9 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
                   </div>
                   <Input
                     name="dueDate"
-                    type="date"
-                    defaultValue={task.dueDate ? task.dueDate.toISOString().slice(0, 10) : ""}
+                    type="datetime-local"
+                    step="60"
+                    defaultValue={toDateTimeLocal(task.dueDate)}
                   />
                   <Textarea name="notes" placeholder="Notes (optional)" defaultValue={task.notes ?? ""} />
                   <div className="flex flex-wrap items-center gap-2 pt-1">

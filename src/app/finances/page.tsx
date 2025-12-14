@@ -1,6 +1,7 @@
 import { SubscriptionBoard } from "@/components/finances/subscription-board";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDateTime, formatDayOfMonth, toTimeLocal } from "@/lib/datetime";
 import { prisma } from "@/lib/prisma";
 
 export default async function FinancesPage() {
@@ -35,11 +36,9 @@ export default async function FinancesPage() {
                   <div>
                     <p className="font-semibold">{sub.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Intl.DateTimeFormat("en", {
-                        month: "short",
-                        day: "numeric",
-                      }).format(sub.renewalDate)}
-                      {` · remind ${sub.reminderDays} days before`}
+                      Every {formatDayOfMonth(sub.renewalDate.getDate())} at{" "}
+                      {toTimeLocal(sub.renewalDate)} (next {formatDateTime(sub.renewalDate)}) · remind{" "}
+                      {sub.reminderDays} days before
                     </p>
                   </div>
                   <span className="text-sm font-semibold">

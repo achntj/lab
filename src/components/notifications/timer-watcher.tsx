@@ -8,10 +8,14 @@ type AlertResponse = {
   timers: { id: number; label: string; endsAt: string | null }[];
 };
 
+type ReminderResponse = {
+  reminders: { id: number; title: string; message: string; triggerAt: string }[];
+};
+
 export function TimerWatcher() {
   const { notify } = useNotifications();
   const notifiedTimers = useRef<Map<number, string>>(new Map());
-  const notifiedReminders = useRef<Set<number>>(new Set());
+  const notifiedReminders = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let mounted = true;
@@ -44,11 +48,12 @@ export function TimerWatcher() {
         }
 
         if (reminderRes.ok) {
-          const data = (await reminderRes.json()) as { reminders: { id: number; title: string; message: string }[] };
+          const data = (await reminderRes.json()) as ReminderResponse;
           data.reminders.forEach((reminder) => {
-            if (notifiedReminders.current.has(reminder.id)) return;
-            notify({ title: reminder.title, message: reminder.message });
-            notifiedReminders.current.add(reminder.id);
+            const key = `${reminder.id}-${reminder.triggerAt}`;
+            if (notifiedReminders.current.has(key)) return;
+            notify({ title: reminder.title, message: reminder.message, sticky: true });
+            notifiedReminders.current.add(key);
           });
         }
       } catch {

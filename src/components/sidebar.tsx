@@ -7,6 +7,7 @@ import {
   CheckSquare,
   Link as LinkIcon,
   Home,
+  Bell,
   StickyNote,
   Timer,
   Wallet,
@@ -36,6 +37,7 @@ export const navItems: NavItem[] = [
     icon: LinkIcon,
     description: "Links",
   },
+  { label: "Reminders", href: "/reminders", icon: Bell, description: "Queue" },
   { label: "Timers", href: "/timers", icon: Timer, description: "Sessions" },
   {
     label: "Finances",

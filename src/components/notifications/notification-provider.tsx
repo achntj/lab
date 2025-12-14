@@ -9,10 +9,11 @@ type Notification = {
   id: number;
   title: string;
   message: string;
+  sticky?: boolean;
 };
 
 type NotificationContextValue = {
-  notify: (input: { title: string; message: string }) => void;
+  notify: (input: { title: string; message: string; sticky?: boolean }) => void;
 };
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -20,12 +21,14 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const notify = (input: { title: string; message: string }) => {
+  const notify = (input: { title: string; message: string; sticky?: boolean }) => {
     const id = Date.now() + Math.random();
     setNotifications((prev) => [...prev, { id, ...input }]);
-    setTimeout(() => {
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-    }, 5000);
+    if (!input.sticky) {
+      setTimeout(() => {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+      }, 5000);
+    }
   };
 
   const value = useMemo(() => ({ notify }), []);

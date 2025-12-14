@@ -26,6 +26,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { formatDateTime, formatDayOfMonth, toTimeLocal } from "@/lib/datetime";
 
 type Subscription = {
   id: number;
@@ -41,9 +42,6 @@ type Subscription = {
 const currency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 
-const formatDate = (value: Date) =>
-  new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(value);
-
 export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscription[] }) {
   const [openId, setOpenId] = useState<number | null>(null);
   const [newOpen, setNewOpen] = useState(false);
@@ -57,14 +55,32 @@ export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscripti
           <DialogTrigger asChild>
             <Button>Add subscription</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>New subscription</DialogTitle>
-            </DialogHeader>
-            <form action={createSubscription} className="grid gap-3">
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>New subscription</DialogTitle>
+              </DialogHeader>
+              <form action={createSubscription} className="grid gap-3">
               <Input name="name" placeholder="Service name" required />
               <Input name="amount" type="number" step="0.01" min="0" placeholder="Amount" required />
-              <Input name="renewalDate" type="date" required />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  name="renewalDay"
+                  type="number"
+                  min="1"
+                  max="31"
+                  placeholder="Day of month"
+                  defaultValue={new Date().getDate()}
+                  required
+                />
+                <Input
+                  name="renewalTime"
+                  type="time"
+                  step="60"
+                  placeholder="Time of day"
+                  defaultValue="09:00"
+                  required
+                />
+              </div>
               <Input name="cardName" placeholder="Card name" required />
               <Input name="cadence" placeholder="Cadence (monthly)" defaultValue="monthly" />
               <Input
@@ -86,13 +102,16 @@ export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscripti
       <div className="grid gap-4 lg:grid-cols-2">
         {subscriptions.map((sub) => {
           const renewal = new Date(sub.renewalDate);
+          const renewalDay = renewal.getDate();
+          const renewalTime = toTimeLocal(renewal);
           return (
             <Card key={sub.id} className="flex flex-col">
               <CardHeader className="flex items-start justify-between gap-2">
                 <div>
                   <CardTitle>{sub.name}</CardTitle>
                   <CardDescription>
-                    Renews {formatDate(renewal)} · {currency(Number(sub.amount))}
+                    Renews every {formatDayOfMonth(renewalDay)} at {renewalTime} (next{" "}
+                    {formatDateTime(renewal)}) · {currency(Number(sub.amount))}
                   </CardDescription>
                   <p className="text-xs text-muted-foreground">Card: {sub.cardName}</p>
                 </div>
@@ -109,9 +128,10 @@ export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscripti
                     onClick={() =>
                       notify({
                         title: "Subscription reminder",
-                        message: `${sub.name} renews ${formatDate(renewal)} · ${currency(
+                        message: `${sub.name} renews ${formatDateTime(renewal)} · ${currency(
                           Number(sub.amount),
                         )}`,
+                        sticky: true,
                       })
                     }
                   >
@@ -141,12 +161,23 @@ export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscripti
                       defaultValue={sub.amount}
                       required
                     />
-                    <Input
-                      name="renewalDate"
-                      type="date"
-                      defaultValue={renewal.toISOString().slice(0, 10)}
-                      required
-                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        name="renewalDay"
+                        type="number"
+                        min="1"
+                        max="31"
+                        defaultValue={renewalDay}
+                        required
+                      />
+                      <Input
+                        name="renewalTime"
+                        type="time"
+                        step="60"
+                        defaultValue={renewalTime || "09:00"}
+                        required
+                      />
+                    </div>
                     <Input name="cardName" defaultValue={sub.cardName} required />
                     <Input name="cadence" defaultValue={sub.cadence} />
                     <Input

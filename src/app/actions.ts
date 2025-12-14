@@ -1,14 +1,18 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { Buffer } from "buffer";
 import { revalidatePath } from "next/cache";
 
+import { formatDateTime, nextMonthlyOccurrence, parseDateInput, toTimeLocal } from "@/lib/datetime";
 import { prisma } from "@/lib/prisma";
 import { syncNoteLinks } from "@/lib/note-links";
 import { deleteRecord, upsertRecord } from "@/lib/records";
 import { deleteReminder, upsertReminder } from "@/lib/reminders";
 
 const revalidate = (...paths: string[]) => paths.forEach((path) => revalidatePath(path));
+const isNotFound = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
 
 async function fetchFaviconData(url: string) {
   try {
@@ -44,16 +48,17 @@ export async function createTask(formData: FormData) {
   const status = String(formData.get("status") ?? "todo");
   const priority = String(formData.get("priority") ?? "normal");
   const dueDateRaw = String(formData.get("dueDate") ?? "");
-  const dueDate = dueDateRaw ? new Date(dueDateRaw) : undefined;
+  const dueDate = parseDateInput(dueDateRaw);
+  if (dueDateRaw && !dueDate) return;
   const notes = String(formData.get("notes") ?? "").trim();
-  const reminderAt = dueDate ? new Date(dueDate.getTime() - 24 * 60 * 60 * 1000) : null;
+  const reminderAt = dueDate ?? null;
 
   const task = await prisma.task.create({
     data: {
       title,
       status,
       priority,
-      dueDate,
+      dueDate: dueDate ?? undefined,
       notes: notes || null,
     },
   });
@@ -73,12 +78,12 @@ export async function createTask(formData: FormData) {
       source: "task",
       sourceId: task.id,
       triggerAt: reminderAt,
-      title: "Task due soon",
-      message: `${title} is due ${dueDate?.toDateString()}`,
+      title: "Task due",
+      message: `${title} is due ${formatDateTime(reminderAt)}`,
     });
   }
 
-  revalidate("/", "/tasks");
+  revalidate("/", "/tasks", "/reminders");
 }
 
 export async function updateTaskStatus(formData: FormData) {
@@ -113,8 +118,9 @@ export async function updateTask(formData: FormData) {
   const priority = String(formData.get("priority") ?? "normal");
   const dueDateRaw = String(formData.get("dueDate") ?? "");
   const notes = String(formData.get("notes") ?? "").trim();
-  const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
-  const reminderAt = dueDate ? new Date(dueDate.getTime() - 24 * 60 * 60 * 1000) : null;
+  const dueDate = parseDateInput(dueDateRaw);
+  if (dueDateRaw && !dueDate) return;
+  const reminderAt = dueDate ?? null;
 
   if (!id || !title) return;
 
@@ -138,14 +144,14 @@ export async function updateTask(formData: FormData) {
       source: "task",
       sourceId: task.id,
       triggerAt: reminderAt,
-      title: "Task due soon",
-      message: `${task.title} is due ${task.dueDate?.toDateString()}`,
+      title: "Task due",
+      message: `${task.title} is due ${formatDateTime(task.dueDate)}`,
     });
   } else {
     await deleteReminder("task", task.id);
   }
 
-  revalidate("/", "/tasks");
+  revalidate("/", "/tasks", "/reminders");
 }
 
 export async function deleteTask(formData: FormData) {
@@ -154,7 +160,7 @@ export async function deleteTask(formData: FormData) {
   await prisma.task.delete({ where: { id } });
   await deleteRecord("task", String(id));
   await deleteReminder("task", id);
-  revalidate("/", "/tasks");
+  revalidate("/", "/tasks", "/reminders");
 }
 
 export async function createNote(formData: FormData) {
@@ -418,14 +424,20 @@ export async function refreshAllBookmarkFavicons() {
 export async function createSubscription(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const amount = Number(formData.get("amount"));
-  const renewalRaw = String(formData.get("renewalDate") ?? "");
+  const renewalDayInput = Number(formData.get("renewalDay"));
+  const renewalTimeRaw = String(formData.get("renewalTime") ?? "").trim();
   const cardName = String(formData.get("cardName") ?? "").trim();
   const reminderDays = Number(formData.get("reminderDays") ?? 3);
   const cadence = String(formData.get("cadence") ?? "monthly").trim();
   const note = String(formData.get("note") ?? "").trim() || null;
-  if (!name || Number.isNaN(amount) || !renewalRaw || !cardName) return;
+  const renewalDay = Number.isNaN(renewalDayInput)
+    ? null
+    : Math.min(31, Math.max(1, Math.round(renewalDayInput)));
+  const renewalTime = renewalTimeRaw || "09:00";
+  const renewalDate = nextMonthlyOccurrence(renewalDay, renewalTime);
+  if (!name || Number.isNaN(amount) || !renewalDate || !cardName) return;
 
-  const renewalDate = new Date(renewalRaw);
+  const daysBefore = Number.isNaN(reminderDays) ? 3 : reminderDays;
 
   const subscription = await prisma.subscription.create({
     data: {
@@ -433,7 +445,7 @@ export async function createSubscription(formData: FormData) {
       amount,
       renewalDate,
       cardName,
-      reminderDays: Number.isNaN(reminderDays) ? 3 : reminderDays,
+      reminderDays: daysBefore,
       cadence,
       note,
     },
@@ -446,43 +458,62 @@ export async function createSubscription(formData: FormData) {
     title: name,
     content: note ?? undefined,
     category: cadence,
-    metadata: { amount, renewalDate: renewalRaw, cardName, reminderDays },
+    metadata: {
+      amount,
+      renewalDate: renewalDate.toISOString(),
+      renewalDay,
+      renewalTime,
+      cardName,
+      reminderDays: daysBefore,
+    },
   });
 
-  const triggerAt = new Date(
-    renewalDate.getTime() - (Number.isNaN(reminderDays) ? 3 : reminderDays) * 24 * 60 * 60 * 1000,
-  );
+  const triggerAt = new Date(renewalDate.getTime() - daysBefore * 24 * 60 * 60 * 1000);
   await upsertReminder({
     kind: "subscription",
     source: "subscription",
     sourceId: subscription.id,
     triggerAt,
     title: "Renewal reminder",
-    message: `${name} renews on ${renewalDate.toDateString()}`,
+    message: `${name} renews on ${formatDateTime(renewalDate)}`,
   });
 
-  revalidate("/finances");
+  revalidate("/finances", "/reminders");
 }
 
 export async function updateSubscription(formData: FormData) {
   const id = Number(formData.get("subscriptionId"));
   const name = String(formData.get("name") ?? "").trim();
   const amount = Number(formData.get("amount"));
-  const renewalRaw = String(formData.get("renewalDate") ?? "");
+  const renewalDayInput = Number(formData.get("renewalDay"));
+  const renewalTimeRaw = String(formData.get("renewalTime") ?? "").trim();
   const cardName = String(formData.get("cardName") ?? "").trim();
   const reminderDays = Number(formData.get("reminderDays") ?? 3);
   const cadence = String(formData.get("cadence") ?? "monthly").trim();
   const note = String(formData.get("note") ?? "").trim() || null;
-  if (!id || !name || Number.isNaN(amount) || !renewalRaw || !cardName) return;
+  if (!id || !name || Number.isNaN(amount) || !cardName) return;
+
+  const existing = await prisma.subscription.findUnique({ where: { id } });
+  if (!existing) return;
+
+  const renewalDayRaw = Number.isNaN(renewalDayInput)
+    ? existing.renewalDate.getDate()
+    : renewalDayInput;
+  const renewalDay = Math.min(31, Math.max(1, Math.round(renewalDayRaw)));
+  const renewalTime = renewalTimeRaw || toTimeLocal(existing.renewalDate) || "09:00";
+  const renewalDate = nextMonthlyOccurrence(renewalDay, renewalTime);
+  if (!renewalDate) return;
+
+  const daysBefore = Number.isNaN(reminderDays) ? 3 : reminderDays;
 
   const subscription = await prisma.subscription.update({
     where: { id },
     data: {
       name,
       amount,
-      renewalDate: new Date(renewalRaw),
+      renewalDate,
       cardName,
-      reminderDays: Number.isNaN(reminderDays) ? 3 : reminderDays,
+      reminderDays: daysBefore,
       cadence,
       note,
     },
@@ -495,12 +526,17 @@ export async function updateSubscription(formData: FormData) {
     title: name,
     content: note ?? undefined,
     category: cadence,
-    metadata: { amount, renewalDate: renewalRaw, cardName, reminderDays },
+    metadata: {
+      amount,
+      renewalDate: renewalDate.toISOString(),
+      renewalDay,
+      renewalTime,
+      cardName,
+      reminderDays: daysBefore,
+    },
   });
 
-  const triggerAt = new Date(
-    new Date(renewalRaw).getTime() - (Number.isNaN(reminderDays) ? 3 : reminderDays) * 24 * 60 * 60 * 1000,
-  );
+  const triggerAt = new Date(renewalDate.getTime() - daysBefore * 24 * 60 * 60 * 1000);
 
   await upsertReminder({
     kind: "subscription",
@@ -508,17 +544,19 @@ export async function updateSubscription(formData: FormData) {
     sourceId: subscription.id,
     triggerAt,
     title: "Renewal reminder",
-    message: `${subscription.name} renews on ${subscription.renewalDate.toDateString()}`,
+    message: `${subscription.name} renews on ${formatDateTime(subscription.renewalDate)}`,
   });
 
-  revalidate("/finances");
+  revalidate("/finances", "/reminders");
 }
 
 export async function deleteSubscription(formData: FormData) {
   const id = Number(formData.get("subscriptionId"));
   if (!id) return;
-  await prisma.subscription.delete({ where: { id } });
+  await prisma.subscription.delete({ where: { id } }).catch((error) => {
+    if (!isNotFound(error)) throw error;
+  });
   await deleteRecord("subscription", String(id));
   await deleteReminder("subscription", id);
-  revalidate("/finances");
+  revalidate("/finances", "/reminders");
 }
