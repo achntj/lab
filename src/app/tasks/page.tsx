@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { createTask, updateTaskStatus } from "@/app/actions";
+import { createTask, deleteTask, updateTask } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
@@ -130,45 +138,76 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           {tasks.map((task) => (
-            <div
-              key={task.id}
-              className="flex flex-col gap-2 rounded-lg border bg-card/60 px-3 py-3 md:flex-row md:items-center md:justify-between"
-            >
-              <div className="space-y-1">
-                <p className="font-medium">{task.title}</p>
-                <p className="text-sm text-muted-foreground">
-                  Priority: {task.priority} · {formatDate(task.dueDate)}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge
-                  className={cn(
-                    "capitalize",
-                    task.status === "in-progress" && "bg-primary text-primary-foreground",
-                    task.status === "blocked" && "bg-destructive text-destructive-foreground",
-                    task.status === "todo" && "bg-muted text-muted-foreground",
-                  )}
-                >
-                  {task.status}
-                </Badge>
-                <form action={updateTaskStatus} className="flex items-center gap-2">
+            <Dialog key={task.id}>
+              <DialogTrigger asChild>
+                <button className="flex w-full flex-col gap-2 rounded-lg border bg-card/60 px-3 py-3 text-left transition hover:border-primary/40 hover:bg-card">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium">{task.title}</p>
+                    <Badge
+                      className={cn(
+                        "capitalize",
+                        task.status === "in-progress" && "bg-primary text-primary-foreground",
+                        task.status === "blocked" && "bg-destructive text-destructive-foreground",
+                        task.status === "todo" && "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {task.status}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Priority: {task.priority} · {formatDate(task.dueDate)}
+                  </p>
+                  {task.notes ? (
+                    <p className="text-xs text-muted-foreground line-clamp-2">{task.notes}</p>
+                  ) : null}
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Edit task</DialogTitle>
+                </DialogHeader>
+                <form action={updateTask} className="grid gap-3">
                   <input type="hidden" name="taskId" value={task.id} />
-                  <select
-                    name="status"
-                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                    defaultValue={task.status}
-                  >
-                    <option value="todo">Todo</option>
-                    <option value="in-progress">In progress</option>
-                    <option value="blocked">Blocked</option>
-                    <option value="done">Done</option>
-                  </select>
-                  <Button type="submit" size="sm" variant="outline">
-                    Update
+                  <Input name="title" defaultValue={task.title} required />
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      name="status"
+                      className="h-10 rounded-md border border-input bg-background px-2 text-sm"
+                      defaultValue={task.status}
+                    >
+                      <option value="todo">Todo</option>
+                      <option value="in-progress">In progress</option>
+                      <option value="blocked">Blocked</option>
+                      <option value="done">Done</option>
+                    </select>
+                    <select
+                      name="priority"
+                      className="h-10 rounded-md border border-input bg-background px-2 text-sm"
+                      defaultValue={task.priority}
+                    >
+                      <option value="high">High</option>
+                      <option value="normal">Normal</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <Input
+                    name="dueDate"
+                    type="date"
+                    defaultValue={task.dueDate ? task.dueDate.toISOString().slice(0, 10) : ""}
+                  />
+                  <Textarea name="notes" placeholder="Notes (optional)" defaultValue={task.notes ?? ""} />
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <Button type="submit">Save changes</Button>
+                  </div>
+                </form>
+                <form action={deleteTask}>
+                  <input type="hidden" name="taskId" value={task.id} />
+                  <Button type="submit" variant="ghost" className="text-destructive">
+                    Delete task
                   </Button>
                 </form>
-              </div>
-            </div>
+              </DialogContent>
+            </Dialog>
           ))}
         </CardContent>
       </Card>

@@ -43,6 +43,7 @@ export async function createTask(formData: FormData) {
   const priority = String(formData.get("priority") ?? "normal");
   const dueDateRaw = String(formData.get("dueDate") ?? "");
   const dueDate = dueDateRaw ? new Date(dueDateRaw) : undefined;
+  const notes = String(formData.get("notes") ?? "").trim();
 
   const task = await prisma.task.create({
     data: {
@@ -50,6 +51,7 @@ export async function createTask(formData: FormData) {
       status,
       priority,
       dueDate,
+      notes: notes || null,
     },
   });
 
@@ -59,7 +61,7 @@ export async function createTask(formData: FormData) {
     sourceId: String(task.id),
     title,
     content: priority,
-    metadata: { dueDate },
+    metadata: { dueDate, status, notes },
   });
 
   revalidate("/", "/tasks", "/calendar");
@@ -83,10 +85,46 @@ export async function updateTaskStatus(formData: FormData) {
       sourceId: String(id),
       title: updated.title,
       content: updated.priority,
-      metadata: { dueDate: updated.dueDate, status: updated.status },
+      metadata: { dueDate: updated.dueDate, status: updated.status, notes: updated.notes },
     });
   }
 
+  revalidate("/", "/tasks", "/calendar");
+}
+
+export async function updateTask(formData: FormData) {
+  const id = Number(formData.get("taskId"));
+  const title = String(formData.get("title") ?? "").trim();
+  const status = String(formData.get("status") ?? "todo");
+  const priority = String(formData.get("priority") ?? "normal");
+  const dueDateRaw = String(formData.get("dueDate") ?? "");
+  const notes = String(formData.get("notes") ?? "").trim();
+  const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
+
+  if (!id || !title) return;
+
+  const task = await prisma.task.update({
+    where: { id },
+    data: { title, status, priority, dueDate, notes: notes || null },
+  });
+
+  await upsertRecord({
+    kind: "task",
+    source: "task",
+    sourceId: String(task.id),
+    title: task.title,
+    content: task.priority,
+    metadata: { dueDate: task.dueDate, status: task.status, notes: task.notes },
+  });
+
+  revalidate("/", "/tasks", "/calendar");
+}
+
+export async function deleteTask(formData: FormData) {
+  const id = Number(formData.get("taskId"));
+  if (!id) return;
+  await prisma.task.delete({ where: { id } });
+  await deleteRecord("task", String(id));
   revalidate("/", "/tasks", "/calendar");
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Trash } from "lucide-react";
 
 import { deleteTimer, toggleTimer } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +44,7 @@ export function TimerGrid({ timers }: { timers: TimerDto[] }) {
         return (
           <div
             key={timer.id}
-            className="flex flex-col gap-2 rounded-lg border bg-card/60 p-3 shadow-sm"
+            className="relative flex flex-col gap-2 rounded-lg border bg-card/60 p-3 shadow-sm"
           >
             <div className="flex items-center justify-between">
               <p className="font-semibold">{timer.label}</p>
@@ -71,13 +72,13 @@ export function TimerGrid({ timers }: { timers: TimerDto[] }) {
                   {timer.running ? "Stop" : "Start"}
                 </Button>
               </form>
-              <form action={deleteTimer}>
-                <input type="hidden" name="timerId" value={timer.id} />
-                <Button variant="ghost" size="sm" className="text-destructive">
-                  Remove
-                </Button>
-              </form>
             </div>
+            <form action={deleteTimer} className="absolute bottom-2 right-2">
+              <input type="hidden" name="timerId" value={timer.id} />
+              <Button variant="ghost" size="sm" className="text-destructive" aria-label="Delete timer">
+                <Trash className="h-4 w-4" />
+              </Button>
+            </form>
           </div>
         );
       })}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { Pencil } from "lucide-react";
 
 import {
   deleteBookmark,
@@ -59,22 +60,33 @@ export function BookmarkGrid({ bookmarks }: { bookmarks: Bookmark[] }) {
         const label = labelFromUrl(bookmark.url);
         return (
           <div key={bookmark.id}>
-            <button
-              type="button"
-              onClick={() => setOpenId(bookmark.id)}
-              className="flex w-full items-center gap-3 rounded-lg border bg-card/60 px-3 py-2 text-left transition hover:border-primary/50 hover:bg-card"
-            >
-              <Favicon src={bookmark.faviconData ?? bookmark.faviconUrl} label={label} />
-              <div className="flex-1 truncate">
-                <p className="truncate text-sm font-semibold text-foreground">{label}</p>
-                <p className="truncate text-xs text-muted-foreground">{bookmark.url}</p>
-              </div>
-              {bookmark.category ? (
-                <Badge variant="secondary" className="rounded-md px-2 py-0 text-[10px]">
-                  {bookmark.category}
-                </Badge>
-              ) : null}
-            </button>
+            <div className="flex w-full items-center gap-3 rounded-lg border bg-card/60 px-3 py-2 transition hover:border-primary/50 hover:bg-card">
+              <a
+                href={bookmark.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex flex-1 items-center gap-3 text-left"
+              >
+                <Favicon src={bookmark.faviconData ?? bookmark.faviconUrl} label={label} />
+                <div className="flex-1 truncate">
+                  <p className="truncate text-sm font-semibold text-foreground">{label}</p>
+                  <p className="truncate text-xs text-muted-foreground">{bookmark.url}</p>
+                </div>
+                {bookmark.category ? (
+                  <Badge variant="secondary" className="rounded-md px-2 py-0 text-[10px]">
+                    {bookmark.category}
+                  </Badge>
+                ) : null}
+              </a>
+              <button
+                type="button"
+                onClick={() => setOpenId(bookmark.id)}
+                className="rounded-md p-1 text-muted-foreground transition hover:bg-muted"
+                aria-label="Edit bookmark"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            </div>
 
             <Dialog
               open={openId === bookmark.id}
