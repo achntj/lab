@@ -11,7 +11,13 @@ import {
 } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
 type Bookmark = {
@@ -112,7 +118,9 @@ export function BookmarkGrid({ bookmarks }: { bookmarks: Bookmark[] }) {
                     placeholder="Category (optional)"
                   />
                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <Button type="submit">Save changes</Button>
+                    <DialogClose asChild>
+                      <Button type="submit">Save changes</Button>
+                    </DialogClose>
                   </div>
                 </form>
                 <div className="flex flex-wrap items-center gap-2">

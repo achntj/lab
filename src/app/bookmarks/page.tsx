@@ -20,7 +20,7 @@ export default async function BookmarksPage() {
     <div className="space-y-6">
       <PageHeader
         title="Bookmarks"
-        description="Clean link grid with cached tab icons and inline editing."
+        description="Bookmark grid with cached favicons and inline editing."
       />
 
       <Card>

@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,7 +54,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
     <div className="space-y-6">
       <PageHeader
         title="Tasks"
-        description="Track open work, due dates, and priority at a glance."
+        description="Manage tasks with status, priority, and optional due dates."
         actions={
           <div className="flex items-center gap-2">
             <form action={createTask} className="flex items-center gap-2">
@@ -197,7 +198,9 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
                   />
                   <Textarea name="notes" placeholder="Notes (optional)" defaultValue={task.notes ?? ""} />
                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <Button type="submit">Save changes</Button>
+                    <DialogClose asChild>
+                      <Button type="submit">Save changes</Button>
+                    </DialogClose>
                   </div>
                 </form>
                 <form action={deleteTask}>

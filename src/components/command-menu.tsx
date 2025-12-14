@@ -59,7 +59,7 @@ export function CommandMenu() {
         </span>
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="overflow-hidden p-0">
+        <DialogContent className="overflow-hidden p-0 sm:max-w-xl">
           <DialogHeader className="px-5 pt-5 pb-2">
             <DialogTitle>Jump anywhere</DialogTitle>
             <DialogDescription>

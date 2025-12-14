@@ -21,7 +21,7 @@ export default async function TimersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Timers"
-        description="Preset sessions to keep work blocks predictable."
+        description="Preset timers for work blocks."
         actions={
           <form action={createTimer} className="flex items-center gap-2">
             <Input name="label" placeholder="New timer" required className="w-40" />
@@ -44,7 +44,7 @@ export default async function TimersPage() {
       <Card>
         <CardHeader>
           <CardTitle>Presets</CardTitle>
-          <CardDescription>Quick durations for deep work.</CardDescription>
+          <CardDescription>Common durations.</CardDescription>
         </CardHeader>
         <CardContent>
           <TimerGrid timers={timers} />

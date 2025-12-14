@@ -32,7 +32,7 @@ export default async function CalendarPage() {
     <div className="space-y-6">
       <PageHeader
         title="Calendar"
-        description="Upcoming events and time-sensitive tasks."
+        description="Upcoming events and dated tasks."
       />
 
       <div className="grid gap-4 lg:grid-cols-2">

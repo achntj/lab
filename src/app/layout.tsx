@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Personal Lab",
-  description: "Local-first desktop workspace built with Tauri + Next.js",
+  description: "Desktop workspace built with Tauri + Next.js",
 };
 
 export default function RootLayout({

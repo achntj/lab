@@ -1,6 +1,6 @@
 # Personal Lab (Tauri + Next.js)
 
-Local-first desktop workspace built with Tauri, Next.js, Tailwind, shadcn/ui, and SQLite via Prisma. Pages include Home, Tasks, Calendar, Notes, Timers, Bookmarks, Subscriptions, and a global search modal with configurable hotkeys and command palette.
+Desktop workspace app built with Tauri, Next.js, Tailwind, shadcn/ui, and SQLite via Prisma. Pages include Home, Tasks, Calendar, Notes, Timers, Bookmarks, Subscriptions, and a global search modal with configurable hotkeys and command palette.
 
 ## Prerequisites
 - Node.js 18+ and npm

@@ -12,7 +12,7 @@ export default async function FinancesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Subscriptions"
-        description="Track renewals, cards, and reminders."
+        description="View subscriptions with renewal dates, cards, and reminders."
       />
       <SubscriptionBoard subscriptions={subscriptions} />
 

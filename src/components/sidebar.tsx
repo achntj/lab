@@ -69,7 +69,7 @@ export function Sidebar() {
             Personal Lab
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Local-first desk companion.
+            Desktop workspace for tasks, notes, and more.
           </p>
         </div>
         <SearchModal

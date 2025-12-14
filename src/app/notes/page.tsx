@@ -9,7 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { prisma } from "@/lib/prisma";
@@ -34,7 +41,9 @@ export default async function NotesPage() {
         <form action={createNote} className="grid gap-3">
           <Input name="title" placeholder="Note title" required />
           <Textarea name="content" placeholder="Body" required />
-          <Button type="submit">Save</Button>
+          <DialogClose asChild>
+            <Button type="submit">Save</Button>
+          </DialogClose>
         </form>
       </DialogContent>
     </Dialog>
@@ -44,7 +53,7 @@ export default async function NotesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Notes"
-        description="Lightweight pages for meeting minutes, ideas, and drafts."
+        description="Notes with a title and body for quick edits."
         actions={NoteAddModal}
       />
 
@@ -90,7 +99,9 @@ function NoteCard({ note }: { note: { id: number; title: string; content: string
           <input type="hidden" name="noteId" value={note.id} />
           <Input name="title" defaultValue={note.title} required />
           <Textarea name="content" defaultValue={note.content} required />
-          <Button type="submit">Save changes</Button>
+          <DialogClose asChild>
+            <Button type="submit">Save changes</Button>
+          </DialogClose>
         </form>
       </DialogContent>
     </Dialog>

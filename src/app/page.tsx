@@ -79,7 +79,7 @@ export default async function HomePage() {
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
-        description="Quick overview of tasks, notes, finances, and weekly momentum."
+        description="Overview of tasks, notes, finances, and upcoming items."
         actions={
           <div className="flex items-center gap-3">
             <Button asChild variant="outline">

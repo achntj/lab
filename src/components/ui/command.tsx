@@ -101,7 +101,10 @@ const CommandItem = React.forwardRef<
   <CommandPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
+      "group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+      "hover:bg-muted/70 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
+      "data-[selected=true]:bg-muted data-[selected=true]:text-foreground data-[selected=true]:shadow-sm",
+      "data-[selected=true]:[&_svg]:text-foreground",
       className,
     )}
     {...props}
@@ -117,7 +120,7 @@ const CommandShortcut = ({
   return (
     <span
       className={cn(
-        "ml-auto text-xs tracking-widest text-muted-foreground",
+        "ml-auto text-xs tracking-widest text-muted-foreground transition-colors group-data-[selected=true]:text-foreground",
         className,
       )}
       {...props}

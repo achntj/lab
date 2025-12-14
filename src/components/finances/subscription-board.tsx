@@ -22,6 +22,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogClose,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -74,7 +75,9 @@ export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscripti
                 defaultValue="3"
               />
               <Input name="note" placeholder="Notes (optional)" />
-              <Button type="submit">Save</Button>
+              <DialogClose asChild>
+                <Button type="submit">Save</Button>
+              </DialogClose>
             </form>
           </DialogContent>
         </Dialog>
@@ -155,7 +158,9 @@ export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscripti
                     />
                     <Input name="note" defaultValue={sub.note ?? ""} placeholder="Notes (optional)" />
                     <div className="flex flex-wrap items-center gap-2 pt-1">
-                      <Button type="submit">Save changes</Button>
+                      <DialogClose asChild>
+                        <Button type="submit">Save changes</Button>
+                      </DialogClose>
                     </div>
                   </form>
                   <form action={deleteSubscription} className="pt-2">
