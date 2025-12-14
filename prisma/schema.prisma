@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Task {
+  id        Int      @id @default(autoincrement())
+  title     String
+  status    String   @default("todo")
+  dueDate   DateTime?
+  priority  String   @default("normal")
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Habit {
+  id            Int      @id @default(autoincrement())
+  name          String
+  cadence       String
+  streak        Int      @default(0)
+  lastCompleted DateTime?
+  createdAt     DateTime @default(now())
+}
+
+model Timer {
+  id             Int      @id @default(autoincrement())
+  label          String
+  durationMinute Int
+  running        Boolean  @default(false)
+  startedAt      DateTime?
+  endsAt         DateTime?
+  completed      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model WeeklyReview {
+  id          Int      @id @default(autoincrement())
+  weekOf      DateTime
+  highlights  String
+  challenges  String
+  focus       String
+  createdAt   DateTime @default(now())
+}
+
+model FinanceEntry {
+  id         Int      @id @default(autoincrement())
+  kind       String
+  amount     Float
+  category   String
+  note       String?
+  occurredOn DateTime
+  createdAt  DateTime @default(now())
+}
+
+model Bookmark {
+  id          Int      @id @default(autoincrement())
+  title       String
+  url         String
+  category    String?
+  faviconUrl  String?
+  faviconData String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Subscription {
+  id            Int      @id @default(autoincrement())
+  name          String
+  amount        Float
+  renewalDate   DateTime
+  cardName      String   @default("Card")
+  reminderDays  Int      @default(3)
+  cadence       String   @default("monthly")
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Record {
+  id        Int      @id @default(autoincrement())
+  kind      String
+  source    String   @default("")
+  sourceId  String   @default("")
+  title     String
+  content   String?
+  url       String?
+  category  String?
+  tags      String?
+  metadata  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([source, sourceId])
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  date        DateTime
+  location    String?
+  description String?
+  createdAt   DateTime @default(now())
+}
