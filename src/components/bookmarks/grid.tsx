@@ -74,9 +74,9 @@ export function BookmarkGrid({ bookmarks }: { bookmarks: Bookmark[] }) {
                 className="flex flex-1 items-center gap-3 text-left"
               >
                 <Favicon src={bookmark.faviconData ?? bookmark.faviconUrl} label={label} />
-                <div className="flex-1 truncate">
+                <div className="flex-1 space-y-0.5 overflow-hidden">
                   <p className="truncate text-sm font-semibold text-foreground">{label}</p>
-                  <p className="truncate text-xs text-muted-foreground">{bookmark.url}</p>
+                  <p className="break-all text-xs text-muted-foreground">{bookmark.url}</p>
                 </div>
                 {bookmark.category ? (
                   <Badge variant="secondary" className="rounded-md px-2 py-0 text-[10px]">

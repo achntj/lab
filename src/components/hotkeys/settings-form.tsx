@@ -9,8 +9,7 @@ import { useHotkeyConfig } from "./hotkey-provider";
 
 const labels: Record<HotkeyAction, string> = {
   commandPalette: "Command palette",
-  search: "Search",
-  quickSearch: "Quick search",
+  quickSearch: "Search",
   newNote: "New note",
   newTask: "New task",
   toggleTheme: "Toggle theme",

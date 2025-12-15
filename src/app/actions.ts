@@ -9,6 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { syncNoteLinks } from "@/lib/note-links";
 import { deleteRecord, upsertRecord } from "@/lib/records";
 import { deleteReminder, upsertReminder } from "@/lib/reminders";
+import { importFromBackup } from "@/lib/import";
+import type { ExportPayload } from "@/lib/export";
 
 const revalidate = (...paths: string[]) => paths.forEach((path) => revalidatePath(path));
 const isNotFound = (error: unknown) =>
@@ -559,4 +561,21 @@ export async function deleteSubscription(formData: FormData) {
   await deleteRecord("subscription", String(id));
   await deleteReminder("subscription", id);
   revalidate("/finances", "/reminders");
+}
+
+export async function importBackup(formData: FormData) {
+  const file = formData.get("backup");
+  if (!file || !(file instanceof File)) return;
+
+  const text = await file.text();
+  let payload: ExportPayload;
+  try {
+    payload = JSON.parse(text) as ExportPayload;
+  } catch (error) {
+    console.error("Invalid backup JSON", error);
+    return;
+  }
+
+  await importFromBackup(payload);
+  revalidate("/", "/tasks", "/notes", "/bookmarks", "/timers", "/finances", "/reminders");
 }

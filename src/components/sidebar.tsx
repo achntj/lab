@@ -16,9 +16,9 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { SearchModal } from "@/components/search/search-modal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { SearchModal } from "@/components/search/search-modal";
 
 export type NavItem = {
   label: string;

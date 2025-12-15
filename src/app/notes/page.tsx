@@ -1,57 +1,19 @@
-import { createNote, updateNote } from "@/app/actions";
+import { createNote } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { prisma } from "@/lib/prisma";
+import { NotesGrid, type NoteWithLinks } from "@/components/notes/notes-grid";
 
-type LinkMeta = { title: string; kind: string };
+type LinkMeta = { title: string; kind: string; noteId?: number | null };
 type NoteLinks = { outgoing: LinkMeta[]; backlinks: LinkMeta[] };
-
-type Segment = { type: "text"; value: string } | { type: "link"; value: string };
-
-function parseContentSegments(content: string): Segment[] {
-  const segments: Segment[] = [];
-  const regex = /\[\[([^[\]]+)\]\]/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = regex.exec(content)) !== null) {
-    const [full, title] = match;
-    if (match.index > lastIndex) {
-      segments.push({ type: "text", value: content.slice(lastIndex, match.index) });
-    }
-    segments.push({ type: "link", value: title.trim() });
-    lastIndex = match.index + full.length;
-  }
-
-  if (lastIndex < content.length) {
-    segments.push({ type: "text", value: content.slice(lastIndex) });
-  }
-
-  return segments.length ? segments : [{ type: "text", value: content }];
-}
 
 export default async function NotesPage() {
   const notes = await prisma.note.findMany({
     orderBy: { updatedAt: "desc" },
-    take: 4,
+    take: 12,
   });
 
   const noteIds = notes.map((note) => String(note.id));
@@ -89,6 +51,7 @@ export default async function NotesPage() {
       bucket(sourceNoteId).outgoing.push({
         title: link.target.title,
         kind: link.target.kind,
+        noteId: recordIdToNoteId.get(link.targetId) ?? null,
       });
     }
     const targetNoteId = recordIdToNoteId.get(link.targetId);
@@ -96,156 +59,61 @@ export default async function NotesPage() {
       bucket(targetNoteId).backlinks.push({
         title: link.source.title,
         kind: link.source.kind,
+        noteId: recordIdToNoteId.get(link.sourceId) ?? null,
       });
     }
   });
 
-  const NoteAddModal = (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <span className="text-lg leading-none">+</span>
-          New
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>New note</DialogTitle>
-        </DialogHeader>
-        <form action={createNote} className="grid gap-3">
-          <Input name="title" placeholder="Note title" required />
+  const titleToId = Object.fromEntries(notes.map((note) => [note.title, note.id]));
+
+  const gridData: NoteWithLinks[] = notes.map((note) => ({
+    id: note.id,
+    title: note.title,
+    content: note.content,
+    updatedAt: note.updatedAt.toISOString(),
+    links: noteLinks.get(note.id)?.outgoing ?? [],
+    backlinks: noteLinks.get(note.id)?.backlinks ?? [],
+  }));
+
+  const NoteComposer = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Write a warmer note</CardTitle>
+        <CardDescription>
+          Capture ideas in Markdown, add links, and weave in [[references]] without leaving this page.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form action={createNote} className="space-y-4">
+          <Input name="title" placeholder="Give it a friendly title" required />
           <Textarea
             name="content"
-            placeholder="Body (use [[Title]] to link another note, task, or record)"
+            placeholder="Write freely — supports Markdown, inline links [like this](https://example.com), and [[note mentions]]."
             required
+            rows={10}
+            className="min-h-[180px]"
           />
-          <DialogClose asChild>
-            <Button type="submit">Save</Button>
-          </DialogClose>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Tip: use headings, bullet lists, code ticks, or bold/italics to shape your writing.
+            </p>
+            <Button type="submit">Save note</Button>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Notes"
-        description="Latest notes with backlinks and quick edits (showing 4 most recent)."
-        actions={NoteAddModal}
+        description="A cozy place to write in rich Markdown, link thoughts together, and revisit them quickly."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {notes.map((note) => (
-          <NoteCard key={note.id} note={note} links={noteLinks.get(note.id)} />
-        ))}
-      </div>
+      {NoteComposer}
+
+      <NotesGrid notes={gridData} titleToId={titleToId} />
     </div>
-  );
-}
-
-function NoteCard({
-  note,
-  links,
-}: {
-  note: { id: number; title: string; content: string; updatedAt: Date };
-  links?: NoteLinks;
-}) {
-  const linkData = links ?? { outgoing: [], backlinks: [] };
-
-  const LinkSection = ({
-    title,
-    items,
-    emptyText,
-  }: {
-    title: string;
-    items: LinkMeta[];
-    emptyText: string;
-  }) => (
-    <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </p>
-      {items.length ? (
-        <div className="flex flex-wrap gap-2">
-          {items.map((item, idx) => (
-            <Badge key={`${item.title}-${idx}`} variant="outline" className="flex gap-1">
-              <span className="font-medium">{item.title}</span>
-              <span className="text-[10px] uppercase text-muted-foreground">{item.kind}</span>
-            </Badge>
-          ))}
-        </div>
-      ) : (
-        <p className="text-xs text-muted-foreground">{emptyText}</p>
-      )}
-    </div>
-  );
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Card className="flex cursor-pointer flex-col transition hover:shadow">
-          <CardHeader className="pb-3">
-            <div className="flex items-start justify-between gap-2">
-              <CardTitle className="text-lg">{note.title}</CardTitle>
-              <Badge variant="secondary">Note</Badge>
-            </div>
-            <CardDescription>
-              Updated{" "}
-              {new Intl.DateTimeFormat("en", {
-                month: "short",
-                day: "numeric",
-              }).format(note.updatedAt)}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1">
-            <p className="text-sm text-muted-foreground line-clamp-4 break-words">
-              {parseContentSegments(note.content).map((segment, idx) =>
-                segment.type === "text" ? (
-                  <span key={`text-${idx}`}>{segment.value}</span>
-                ) : (
-                  <span
-                    key={`link-${idx}`}
-                    className="mx-1 inline-flex items-center gap-1 rounded-md border bg-muted/60 px-2 py-0.5 text-xs font-medium text-foreground align-baseline"
-                  >
-                    <span>{segment.value}</span>
-                  </span>
-                ),
-              )}
-            </p>
-          </CardContent>
-        </Card>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Edit note</DialogTitle>
-        </DialogHeader>
-        <form action={updateNote} className="grid gap-3">
-          <input type="hidden" name="noteId" value={note.id} />
-          <Input name="title" defaultValue={note.title} required />
-          <Textarea
-            name="content"
-            defaultValue={note.content}
-            required
-            placeholder="Use [[Title]] to link another note, task, or record"
-          />
-          <DialogClose asChild>
-            <Button type="submit">Save changes</Button>
-          </DialogClose>
-        </form>
-        <div className="space-y-2">
-          <LinkSection
-            title="Links"
-            items={linkData.outgoing}
-            emptyText="No links yet. Add [[Title]] inside the note body."
-          />
-          <LinkSection
-            title="Backlinks"
-            items={linkData.backlinks}
-            emptyText="Nothing links here yet."
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

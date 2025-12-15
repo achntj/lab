@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import { useHotkey } from "@/components/hotkeys/hotkey-provider";
 import { Badge } from "@/components/ui/badge";
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
@@ -28,51 +34,14 @@ export function triggerSearchModal() {
   window.dispatchEvent(new Event(SEARCH_MODAL_EVENT));
 }
 
-function kindBadge(kind: string) {
-  switch (kind) {
-    case "task":
-      return "bg-primary text-primary-foreground";
-    case "note":
-      return "bg-secondary text-secondary-foreground";
-    case "link":
-      return "bg-muted text-foreground";
-    case "subscription":
-      return "bg-amber-100 text-amber-900";
-    case "finance":
-      return "bg-emerald-100 text-emerald-900";
-    case "timer":
-      return "bg-sky-100 text-sky-900";
-    default:
-      return "bg-muted text-foreground";
-  }
-}
-
-function resultHref(result: SearchResult): string {
-  switch (result.kind) {
-    case "task":
-      return "/tasks";
-    case "note":
-      return "/notes";
-    case "link":
-      return result.url || "/bookmarks";
-    case "subscription":
-    case "finance":
-      return "/finances";
-    case "timer":
-      return "/timers";
-    default:
-      return "/";
-  }
-}
-
 export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   useHotkey("quickSearch", () => setOpen(true));
-  useHotkey("search", () => setOpen(true));
 
   useEffect(() => {
     const handler = () => setOpen(true);
@@ -82,11 +51,14 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
 
   useEffect(() => {
     if (!query.trim()) {
+      setResults([]);
+      setIsLoading(false);
       return undefined;
     }
     const controller = new AbortController();
-    const fetchResults = async () => {
+    const run = async () => {
       try {
+        setIsLoading(true);
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
           signal: controller.signal,
         });
@@ -95,22 +67,31 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
         setResults(data.results);
       } catch {
         /* ignore */
+      } finally {
+        setIsLoading(false);
       }
     };
-    const t = setTimeout(fetchResults, 200);
+    const t = setTimeout(run, 120);
     return () => {
       clearTimeout(t);
       controller.abort();
+      setIsLoading(false);
     };
   }, [query]);
 
   const handleSelect = (res: SearchResult) => {
-    const href = resultHref(res);
     setOpen(false);
     setQuery("");
     setResults([]);
-    router.push(href);
+    if (res.kind === "link" && res.url) {
+      window.open(res.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const href = routeFor(res);
+    if (href) router.push(href);
   };
+
+  const highlightedQuery = useMemo(() => query.trim(), [query]);
 
   return (
     <>
@@ -131,37 +112,41 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
       >
         <DialogContent className="p-0 sm:max-w-xl">
           <DialogTitle className="sr-only">Search</DialogTitle>
-          <Command shouldFilter={false}>
-            <div className="flex items-center gap-2 border-b px-4 py-3">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <CommandInput
-                autoFocus
-                placeholder='Search (supports date text like "2024-12-10")'
-                value={query}
-                onValueChange={(val) => {
-                  setQuery(val);
-                  if (!val.trim()) setResults([]);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    e.preventDefault();
-                    setQuery("");
-                    setResults([]);
-                    setOpen(false);
-                  }
-                }}
-                className="h-11 text-base"
-              />
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-md p-1 text-muted-foreground hover:bg-muted"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+          <Command shouldFilter={false} className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setQuery("");
+                setResults([]);
+              }}
+              className="absolute right-3 top-3 z-10 rounded-md p-1 text-muted-foreground transition hover:bg-muted"
+              aria-label="Close search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <CommandInput
+              autoFocus
+              placeholder='Search anything (dates like "dec 12" or "2025-12-12")'
+              value={query}
+              onValueChange={(val) => {
+                setQuery(val);
+                if (!val.trim()) setResults([]);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  setQuery("");
+                  setResults([]);
+                  setOpen(false);
+                }
+              }}
+              className="h-12 pr-10 text-base"
+            />
             <CommandList className="max-h-80 overflow-y-auto">
-              <CommandEmpty>No results.</CommandEmpty>
+              <CommandEmpty>
+                {isLoading ? "Searching..." : query.trim() ? "No results." : "Type to search."}
+              </CommandEmpty>
               {results.map((res) => (
                 <CommandItem
                   key={`${res.kind}-${res.id}`}
@@ -171,15 +156,19 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
                 >
                   <div className="flex w-full items-center gap-2">
                     <Badge className={cn(kindBadge(res.kind), "capitalize")}>{res.kind}</Badge>
-                    <p className="truncate text-sm font-semibold text-foreground">{res.title}</p>
+                    <Highlighted text={res.title} query={highlightedQuery} className="truncate text-sm font-semibold text-foreground" />
                   </div>
                   {res.content ? (
-                    <p className="w-full truncate text-xs text-muted-foreground">{res.content}</p>
+                    <Highlighted
+                      text={res.content}
+                      query={highlightedQuery}
+                      className="w-full truncate text-xs text-muted-foreground"
+                    />
                   ) : null}
                   <div className="flex w-full items-center gap-2 text-[11px] text-muted-foreground">
                     <span>{res.source}</span>
                     {res.url ? (
-                      <span className="truncate text-primary">{res.url}</span>
+                      <Highlighted text={res.url} query={highlightedQuery} className="truncate text-primary" />
                     ) : null}
                     {res.category ? <Badge variant="outline">{res.category}</Badge> : null}
                   </div>
@@ -191,4 +180,77 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
       </Dialog>
     </>
   );
+}
+
+function routeFor(result: SearchResult): string {
+  switch (result.kind) {
+    case "task":
+      return "/tasks";
+    case "note":
+      return "/notes";
+    case "subscription":
+    case "finance":
+      return "/finances";
+    case "timer":
+      return "/timers";
+    case "link":
+      return result.url || "/bookmarks";
+    default:
+      return "/";
+  }
+}
+
+function kindBadge(kind: string) {
+  switch (kind) {
+    case "task":
+      return "bg-primary text-primary-foreground";
+    case "note":
+      return "bg-secondary text-secondary-foreground";
+    case "link":
+      return "bg-muted text-foreground";
+    case "subscription":
+    case "finance":
+      return "bg-amber-200 text-amber-900 dark:bg-amber-300/70 dark:text-amber-950";
+    case "timer":
+      return "bg-sky-200 text-sky-900 dark:bg-sky-300/70 dark:text-sky-950";
+    default:
+      return "bg-muted text-foreground";
+  }
+}
+
+function Highlighted({
+  text,
+  query,
+  className,
+}: {
+  text: string;
+  query: string;
+  className?: string;
+}) {
+  if (!query.trim()) return <span className={className}>{text}</span>;
+  const escaped = escapeRegex(query.trim());
+  const regex = new RegExp(`(${escaped})`, "ig");
+  const parts = text.split(regex);
+  return (
+    <span className={className}>
+      {parts.map((part, idx) => {
+        if (!part) return null;
+        const isMatch = part.toLowerCase() === query.trim().toLowerCase();
+        return isMatch ? (
+          <mark
+            key={idx}
+            className="rounded bg-amber-200 px-0.5 text-foreground dark:bg-amber-400/40"
+          >
+            {part}
+          </mark>
+        ) : (
+          <span key={idx}>{part}</span>
+        );
+      })}
+    </span>
+  );
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

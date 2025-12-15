@@ -24,6 +24,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime, toDateTimeLocal } from "@/lib/datetime";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
+import { TasksFilterControls } from "@/components/tasks/filter-controls";
+
+export const dynamic = "force-dynamic";
 
 const formatDate = (date?: Date | null) => formatDateTime(date) || "No due date";
 
@@ -105,25 +108,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       />
 
       <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card/60 px-3 py-2">
-        <form method="get" className="flex items-center gap-2">
-          <select
-            name="status"
-            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-            defaultValue={statusFilter ?? "all"}
-          >
-            <option value="all">All</option>
-            <option value="todo">Todo</option>
-            <option value="in-progress">In progress</option>
-            <option value="blocked">Blocked</option>
-            <option value="done">Done</option>
-          </select>
-          <Button type="submit" size="sm" variant="secondary">
-            Filter
-          </Button>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/tasks">Reset</Link>
-          </Button>
-        </form>
+        <TasksFilterControls current={statusFilter} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

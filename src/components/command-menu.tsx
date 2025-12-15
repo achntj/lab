@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Sparkles, SquarePen, Search } from "lucide-react";
 
 import { navItems } from "@/components/sidebar";
+import { triggerSearchModal } from "@/components/search/search-modal";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -25,7 +26,6 @@ import {
 } from "@/components/ui/dialog";
 import { useHotkey } from "@/components/hotkeys/hotkey-provider";
 import { cn } from "@/lib/utils";
-import { triggerSearchModal } from "@/components/search/search-modal";
 
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
@@ -124,7 +124,7 @@ export function CommandMenu() {
                     <Search className="h-4 w-4 text-muted-foreground" />
                     <span>Search everything</span>
                   </div>
-                  <CommandShortcut>⌘⇧F</CommandShortcut>
+                  <CommandShortcut>/</CommandShortcut>
                 </CommandItem>
               </CommandGroup>
             </CommandList>
