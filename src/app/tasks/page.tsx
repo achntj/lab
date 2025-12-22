@@ -31,7 +31,7 @@ export const dynamic = "force-dynamic";
 const formatDate = (date?: Date | null) => formatDateTime(date) || "No due date";
 
 type TasksPageProps = {
-  searchParams?: { status?: string };
+  searchParams?: { status?: string | string[] };
 };
 
 function TaskCreateDialog() {
@@ -86,18 +86,18 @@ function TaskCreateDialog() {
 }
 
 export default async function TasksPage({ searchParams }: TasksPageProps) {
-  const statusFilter = searchParams?.status;
-  const where =
-    statusFilter && statusFilter !== "all" ? { status: statusFilter } : undefined;
+  const statusParam = Array.isArray(searchParams?.status)
+    ? searchParams?.status[0]
+    : searchParams?.status;
+  const statusFilter = statusParam?.trim() || "all";
 
-  const tasks = await prisma.task.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-  });
+  const tasks = await prisma.task.findMany({ orderBy: { createdAt: "desc" } });
   const totals = tasks.reduce<Record<string, number>>((acc, task) => {
     acc[task.status] = (acc[task.status] ?? 0) + 1;
     return acc;
   }, {});
+  const filteredTasks =
+    statusFilter !== "all" ? tasks.filter((task) => task.status === statusFilter) : tasks;
 
   return (
     <div className="space-y-6">
@@ -136,7 +136,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
           <CardDescription>Seeded demo rows for local testing.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {tasks.map((task) => (
+          {filteredTasks.map((task) => (
             <Dialog key={task.id}>
               <DialogTrigger asChild>
                 <button className="flex w-full flex-col gap-2 rounded-lg border bg-card/60 px-3 py-3 text-left transition hover:border-primary/40 hover:bg-card">

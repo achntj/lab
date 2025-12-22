@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
-type Bookmark = {
+export type Bookmark = {
   id: number;
   title: string;
   url: string;
@@ -71,15 +71,15 @@ export function BookmarkGrid({ bookmarks }: { bookmarks: Bookmark[] }) {
                 href={bookmark.url}
                 target="_blank"
                 rel="noreferrer"
-                className="flex flex-1 items-center gap-3 text-left"
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
               >
                 <Favicon src={bookmark.faviconData ?? bookmark.faviconUrl} label={label} />
-                <div className="flex-1 space-y-0.5 overflow-hidden">
+                <div className="min-w-0 flex-1 space-y-0.5 overflow-hidden">
                   <p className="truncate text-sm font-semibold text-foreground">{label}</p>
-                  <p className="break-all text-xs text-muted-foreground">{bookmark.url}</p>
+                  <p className="truncate text-xs text-muted-foreground">{bookmark.url}</p>
                 </div>
                 {bookmark.category ? (
-                  <Badge variant="secondary" className="rounded-md px-2 py-0 text-[10px]">
+                  <Badge variant="secondary" className="shrink-0 rounded-md px-2 py-0 text-[10px]">
                     {bookmark.category}
                   </Badge>
                 ) : null}
@@ -102,22 +102,33 @@ export function BookmarkGrid({ bookmarks }: { bookmarks: Bookmark[] }) {
                 <DialogHeader>
                   <DialogTitle>Edit bookmark</DialogTitle>
                 </DialogHeader>
-                <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-3">
-                  <Favicon src={bookmark.faviconData ?? bookmark.faviconUrl} label={label} />
-                  <div className="truncate text-sm">
-                    <p className="font-medium">{label}</p>
-                    <p className="text-muted-foreground">{bookmark.url}</p>
-                  </div>
-                </div>
-                <form action={updateBookmark} className="grid gap-2">
+                <form
+                  action={updateBookmark}
+                  className="grid min-w-0 grid-cols-[32px_minmax(0,1fr)] gap-x-3 gap-y-2"
+                >
                   <input type="hidden" name="bookmarkId" value={bookmark.id} />
-                  <Input name="url" defaultValue={bookmark.url} required />
+                  <div className="col-span-2 grid grid-cols-[32px_minmax(0,1fr)] items-center gap-x-3 rounded-lg border bg-muted/30 py-3 pr-3">
+                    <div className="pl-3">
+                      <Favicon src={bookmark.faviconData ?? bookmark.faviconUrl} label={label} />
+                    </div>
+                    <div className="min-w-0 text-sm">
+                      <p className="truncate font-medium">{label}</p>
+                      <p className="truncate text-muted-foreground">{bookmark.url}</p>
+                    </div>
+                  </div>
+                  <Input
+                    name="url"
+                    defaultValue={bookmark.url}
+                    required
+                    className="col-start-2 min-w-0 w-full max-w-full box-border overflow-x-auto overflow-y-hidden whitespace-nowrap"
+                  />
                   <Input
                     name="category"
                     defaultValue={bookmark.category ?? ""}
                     placeholder="Category (optional)"
+                    className="col-start-2 min-w-0 w-full max-w-full box-border"
                   />
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <div className="col-start-2 flex flex-wrap items-center gap-2 pt-1">
                     <DialogClose asChild>
                       <Button type="submit">Save changes</Button>
                     </DialogClose>

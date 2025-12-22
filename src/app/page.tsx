@@ -246,14 +246,16 @@ export default async function HomePage() {
               return (
                 <div
                   key={bm.id}
-                  className="flex items-center justify-between rounded-lg border bg-muted/50 px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-lg border bg-muted/50 px-3 py-2"
                 >
-                  <div>
-                    <p className="font-medium">{label}</p>
-                    <p className="text-sm text-muted-foreground">{bm.url}</p>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{label}</p>
+                    <p className="truncate text-sm text-muted-foreground">{bm.url}</p>
                   </div>
                   {bm.category ? (
-                    <Badge variant="secondary">{bm.category}</Badge>
+                    <Badge variant="secondary" className="shrink-0">
+                      {bm.category}
+                    </Badge>
                   ) : null}
                 </div>
               );

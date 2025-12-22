@@ -12,6 +12,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
 import { SearchModal } from "@/components/search/search-modal";
 import { Button } from "@/components/ui/button";
+import { SoftDate } from "@/components/soft-date";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -73,7 +74,8 @@ export default function RootLayout({
                       Personal Lab
                     </span>
                   </div>
-                  <div className="flex flex-1 justify-end gap-2">
+                  <div className="flex flex-1 items-center justify-end gap-3">
+                    <SoftDate className="hidden md:flex" />
                     <div className="flex items-center gap-2">
                       <SearchModal
                         trigger={

@@ -1,10 +1,10 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
-import { Buffer } from "buffer";
 import { revalidatePath } from "next/cache";
 
 import { formatDateTime, nextMonthlyOccurrence, parseDateInput, toTimeLocal } from "@/lib/datetime";
+import { createBookmarkEntry, fetchFaviconData, normalizeBookmarkCategory } from "@/lib/bookmarks";
 import { prisma } from "@/lib/prisma";
 import { syncNoteLinks } from "@/lib/note-links";
 import { deleteRecord, upsertRecord } from "@/lib/records";
@@ -15,33 +15,6 @@ import type { ExportPayload } from "@/lib/export";
 const revalidate = (...paths: string[]) => paths.forEach((path) => revalidatePath(path));
 const isNotFound = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
-
-async function fetchFaviconData(url: string) {
-  try {
-    const target = new URL(url);
-    const trySources = [
-      `https://www.google.com/s2/favicons?domain=${target.hostname}&sz=64`,
-      `${target.origin}/favicon.ico`,
-    ];
-
-    for (const src of trySources) {
-      const res = await fetch(src);
-      if (!res.ok) continue;
-      const contentType = res.headers.get("content-type") ?? "image/png";
-      const buffer = Buffer.from(await res.arrayBuffer());
-      const base64 = buffer.toString("base64");
-      return {
-        faviconUrl: src,
-        faviconData: `data:${contentType};base64,${base64}`,
-      };
-    }
-
-    return { faviconUrl: null, faviconData: null };
-  } catch (error) {
-    console.error("Failed to fetch favicon", error);
-    return { faviconUrl: null as string | null, faviconData: null as string | null };
-  }
-}
 
 export async function createTask(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
@@ -211,6 +184,16 @@ export async function updateNote(formData: FormData) {
   revalidate("/", "/notes");
 }
 
+export async function deleteNote(formData: FormData) {
+  const id = Number(formData.get("noteId"));
+  if (!id) return;
+
+  await prisma.note.delete({ where: { id } });
+  await deleteRecord("note", String(id));
+
+  revalidate("/", "/notes");
+}
+
 export async function toggleTimer(formData: FormData) {
   const id = Number(formData.get("timerId"));
   if (!id) return;
@@ -319,56 +302,38 @@ export async function createBookmark(formData: FormData) {
   const category = String(formData.get("category") ?? "").trim() || null;
   if (!url) return;
 
-  let hostname: string | null = null;
-  try {
-    hostname = new URL(url).hostname;
-  } catch {
-    return;
-  }
-  const title = hostname || url;
-
-  const { faviconUrl, faviconData } = await fetchFaviconData(url);
-
-  const bookmark = await prisma.bookmark.create({
-    data: {
-      title,
-      url,
-      category,
-      faviconUrl: faviconUrl ?? undefined,
-      faviconData: faviconData ?? undefined,
-    },
-  });
-
-  await upsertRecord({
-    kind: "link",
-    source: "bookmark",
-    sourceId: String(bookmark.id),
-    title,
-    url,
-    category: category ?? undefined,
-    metadata: { category },
-  });
+  const bookmark = await createBookmarkEntry({ url, category });
+  if (!bookmark) return;
 
   revalidate("/bookmarks");
 }
 
 export async function updateBookmark(formData: FormData) {
   const id = Number(formData.get("bookmarkId"));
-  const url = String(formData.get("url") ?? "").trim();
-  const category = String(formData.get("category") ?? "").trim() || null;
-  if (!id || !url) return;
+  const rawUrl = String(formData.get("url") ?? "").trim();
+  const category = normalizeBookmarkCategory(String(formData.get("category") ?? ""));
+  if (!id || !rawUrl) return;
 
-  let hostname: string | null = null;
+  let parsed: URL;
   try {
-    hostname = new URL(url).hostname;
+    parsed = new URL(rawUrl);
   } catch {
     return;
   }
-  const title = hostname || url;
+  const normalizedUrl = parsed.toString();
+  const duplicate = await prisma.bookmark.findFirst({
+    where: {
+      id: { not: id },
+      url: { in: [rawUrl, normalizedUrl] },
+    },
+  });
+  if (duplicate) return;
+
+  const title = parsed.hostname || normalizedUrl;
 
   await prisma.bookmark.update({
     where: { id },
-    data: { title, url, category },
+    data: { title, url: normalizedUrl, category },
   });
 
   await upsertRecord({
@@ -376,7 +341,7 @@ export async function updateBookmark(formData: FormData) {
     source: "bookmark",
     sourceId: String(id),
     title,
-    url,
+    url: normalizedUrl,
     category: category ?? undefined,
     metadata: { category },
   });

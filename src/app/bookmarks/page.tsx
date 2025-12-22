@@ -1,5 +1,5 @@
 import { createBookmark, refreshAllBookmarkFavicons } from "@/app/actions";
-import { BookmarkGrid } from "@/components/bookmarks/grid";
+import { BookmarkFilters } from "@/components/bookmarks/filter-tabs";
 import { PageHeader } from "@/components/page-header";
 import {
   Card,
@@ -9,12 +9,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DEFAULT_BOOKMARK_CATEGORY } from "@/lib/bookmarks";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function BookmarksPage() {
+  await prisma.bookmark.updateMany({
+    where: { OR: [{ category: null }, { category: "" }] },
+    data: { category: DEFAULT_BOOKMARK_CATEGORY },
+  });
   const bookmarks = await prisma.bookmark.findMany({
     orderBy: { createdAt: "desc" },
   });
+  const categories = Array.from(
+    new Set(bookmarks.map((bookmark) => bookmark.category).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b));
 
   return (
     <div className="space-y-6">
@@ -43,7 +53,7 @@ export default async function BookmarksPage() {
         <CardContent>
           <form action={createBookmark} className="grid gap-3 md:grid-cols-3">
             <Input name="url" placeholder="https://…" type="url" required />
-            <Input name="category" placeholder="Category (optional)" />
+            <Input name="category" placeholder="Category (default: Design)" />
             <button
               type="submit"
               className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
@@ -54,7 +64,11 @@ export default async function BookmarksPage() {
         </CardContent>
       </Card>
 
-      <BookmarkGrid bookmarks={bookmarks} />
+      <BookmarkFilters
+        bookmarks={bookmarks}
+        categories={categories}
+        defaultCategory={DEFAULT_BOOKMARK_CATEGORY}
+      />
     </div>
   );
 }

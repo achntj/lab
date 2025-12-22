@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 
-import { updateNote } from "@/app/actions";
+import { deleteNote, updateNote } from "@/app/actions";
 import { MarkdownPreview } from "@/components/markdown-preview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ export function NotesGrid({ notes, titleToId }: NotesGridProps) {
     Object.fromEntries(notes.map((note) => [note.id, { title: note.title, content: note.content }])),
   );
   const [isSaving, startTransition] = useTransition();
+  const [isDeleting, startDelete] = useTransition();
 
   const notesById = useMemo(() => Object.fromEntries(notes.map((n) => [n.id, n])), [notes]);
 
@@ -157,6 +158,22 @@ export function NotesGrid({ notes, titleToId }: NotesGridProps) {
                   <div className="flex items-center gap-2">
                     <Button type="submit" disabled={isSaving}>
                       {isSaving ? "Saving..." : "Save changes"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-destructive"
+                      disabled={isDeleting}
+                      onClick={() => {
+                        const formData = new FormData();
+                        formData.set("noteId", String(selected.id));
+                        startDelete(async () => {
+                          await deleteNote(formData);
+                          openNote(null);
+                        });
+                      }}
+                    >
+                      {isDeleting ? "Deleting..." : "Delete"}
                     </Button>
                     <DialogClose asChild>
                       <Button type="button" variant="ghost">
