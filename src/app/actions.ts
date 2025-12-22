@@ -401,8 +401,9 @@ export async function createSubscription(formData: FormData) {
     ? null
     : Math.min(31, Math.max(1, Math.round(renewalDayInput)));
   const renewalTime = renewalTimeRaw || "09:00";
+  if (!name || Number.isNaN(amount) || renewalDay === null || !cardName) return;
   const renewalDate = nextMonthlyOccurrence(renewalDay, renewalTime);
-  if (!name || Number.isNaN(amount) || !renewalDate || !cardName) return;
+  if (!renewalDate) return;
 
   const daysBefore = Number.isNaN(reminderDays) ? 3 : reminderDays;
 
