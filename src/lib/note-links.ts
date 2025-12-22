@@ -41,6 +41,5 @@ export async function syncNoteLinks(noteId: number, content: string) {
       sourceId: record.id,
       targetId,
     })),
-    skipDuplicates: true,
   });
 }
