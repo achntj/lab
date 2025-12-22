@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
@@ -28,10 +28,16 @@ type SearchResult = {
 };
 
 export const SEARCH_MODAL_EVENT = "personal-lab-open-search";
+export const SEARCH_MODAL_CLOSE_EVENT = "personal-lab-close-search";
 
 export function triggerSearchModal() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(SEARCH_MODAL_EVENT));
+}
+
+export function closeSearchModal() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(SEARCH_MODAL_CLOSE_EVENT));
 }
 
 export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
@@ -41,13 +47,25 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  const closeModal = useCallback((broadcast = false) => {
+    setOpen(false);
+    setQuery("");
+    setResults([]);
+    if (broadcast) closeSearchModal();
+  }, []);
+
   useHotkey("quickSearch", () => setOpen(true));
 
   useEffect(() => {
-    const handler = () => setOpen(true);
-    window.addEventListener(SEARCH_MODAL_EVENT, handler);
-    return () => window.removeEventListener(SEARCH_MODAL_EVENT, handler);
-  }, []);
+    const handleOpen = () => setOpen(true);
+    const handleClose = () => closeModal();
+    window.addEventListener(SEARCH_MODAL_EVENT, handleOpen);
+    window.addEventListener(SEARCH_MODAL_CLOSE_EVENT, handleClose);
+    return () => {
+      window.removeEventListener(SEARCH_MODAL_EVENT, handleOpen);
+      window.removeEventListener(SEARCH_MODAL_CLOSE_EVENT, handleClose);
+    };
+  }, [closeModal]);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -80,9 +98,7 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
   }, [query]);
 
   const handleSelect = (res: SearchResult) => {
-    setOpen(false);
-    setQuery("");
-    setResults([]);
+    closeModal(true);
     if (res.kind === "link" && res.url) {
       window.open(res.url, "_blank", "noopener,noreferrer");
       return;
@@ -103,10 +119,10 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
       <Dialog
         open={open}
         onOpenChange={(isOpen) => {
-          setOpen(isOpen);
-          if (!isOpen) {
-            setQuery("");
-            setResults([]);
+          if (isOpen) {
+            setOpen(true);
+          } else {
+            closeModal(true);
           }
         }}
       >
@@ -116,9 +132,7 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
             <button
               type="button"
               onClick={() => {
-                setOpen(false);
-                setQuery("");
-                setResults([]);
+                closeModal(true);
               }}
               className="absolute right-3 top-3 z-10 rounded-md p-1 text-muted-foreground transition hover:bg-muted"
               aria-label="Close search"
@@ -136,9 +150,7 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
                   e.preventDefault();
-                  setQuery("");
-                  setResults([]);
-                  setOpen(false);
+                  closeModal(true);
                 }
               }}
               className="h-12 pr-10 text-base"
