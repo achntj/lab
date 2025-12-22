@@ -23,7 +23,11 @@ export default async function BookmarksPage() {
     orderBy: { createdAt: "desc" },
   });
   const categories = Array.from(
-    new Set(bookmarks.map((bookmark) => bookmark.category).filter(Boolean)),
+    new Set(
+      bookmarks
+        .map((bookmark) => bookmark.category)
+        .filter((category): category is string => Boolean(category)),
+    ),
   ).sort((a, b) => a.localeCompare(b));
 
   return (
