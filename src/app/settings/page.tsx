@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HotkeySettingsForm } from "@/components/hotkeys/settings-form";
+import { LockSettingsForm } from "@/components/lock/lock-settings-form";
 import { importBackup } from "@/app/actions";
 
 export default function SettingsPage() {
@@ -51,6 +52,16 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <HotkeySettingsForm />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Lock screen</CardTitle>
+          <CardDescription>Require fingerprint or PIN after inactivity and on launch.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LockSettingsForm />
         </CardContent>
       </Card>
     </div>

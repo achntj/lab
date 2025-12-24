@@ -13,6 +13,7 @@ const labels: Record<HotkeyAction, string> = {
   newNote: "New note",
   newTask: "New task",
   toggleTheme: "Toggle theme",
+  lockApp: "Lock app",
 };
 
 export function HotkeySettingsForm() {

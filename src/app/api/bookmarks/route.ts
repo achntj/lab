@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
+import { isLocked } from "@/lib/lock-guard";
 import { createBookmarkEntry } from "@/lib/bookmarks";
 
 type BookmarkPayload = {
@@ -9,6 +10,9 @@ type BookmarkPayload = {
 };
 
 export async function POST(request: Request) {
+  if (await isLocked()) {
+    return NextResponse.json({ error: "Locked." }, { status: 423 });
+  }
   let payload: BookmarkPayload;
   try {
     payload = await request.json();

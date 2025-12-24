@@ -19,8 +19,17 @@ export function HotkeyProvider({ children }: { children: React.ReactNode }) {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        const parsed = JSON.parse(stored);
-        return { ...defaultHotkeys, ...parsed };
+        const parsed = JSON.parse(stored) as Partial<Record<HotkeyAction, string>>;
+        const next = { ...defaultHotkeys, ...parsed };
+        let didMigrate = false;
+        if (!parsed.lockApp && parsed.toggleTheme === "mod+shift+l") {
+          next.toggleTheme = defaultHotkeys.toggleTheme;
+          didMigrate = true;
+        }
+        if (didMigrate) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        }
+        return next;
       } catch {
         return defaultHotkeys;
       }

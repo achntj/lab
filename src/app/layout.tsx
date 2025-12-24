@@ -8,11 +8,16 @@ import { cn } from "@/lib/utils";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
 import { TimerWatcher } from "@/components/notifications/timer-watcher";
 import { HotkeyProvider } from "@/components/hotkeys/hotkey-provider";
+import { LockGate } from "@/components/lock/lock-gate";
+import { LockProvider } from "@/components/lock/lock-provider";
+import { LockedPlaceholder } from "@/components/lock/locked-placeholder";
+import { LockButton } from "@/components/lock/lock-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
 import { SearchModal } from "@/components/search/search-modal";
 import { Button } from "@/components/ui/button";
 import { SoftDate } from "@/components/soft-date";
+import { getLockState } from "@/lib/lock-state";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,11 +49,16 @@ export const metadata: Metadata = {
   description: "Desktop workspace built with Tauri + Next.js",
 };
 
-export default function RootLayout({
+export const dynamic = "force-dynamic";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lockState = await getLockState();
+  const isLocked = lockState.enabled && lockState.locked;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -63,49 +73,66 @@ export default function RootLayout({
       >
         <HotkeyProvider>
           <NotificationProvider>
-            <div className="relative flex min-h-screen overflow-hidden">
-              <div className="ambient-blobs" aria-hidden />
-              <Sidebar />
-              <div className="cozy-shell flex min-h-screen flex-1 flex-col">
-                <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/80 px-4 py-3 backdrop-blur md:px-6">
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground md:hidden">
-                    <MobileNav />
-                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                      Personal Lab
-                    </span>
+            <LockProvider initialLocked={isLocked}>
+              <div className="relative flex min-h-screen overflow-hidden">
+                <div className="ambient-blobs" aria-hidden />
+                {isLocked ? (
+                  <div className="cozy-shell flex min-h-screen flex-1 flex-col">
+                    <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+                      <LockedPlaceholder />
+                    </main>
                   </div>
-                  <div className="flex flex-1 items-center justify-end gap-3">
-                    <SoftDate className="hidden md:flex" />
-                    <div className="flex items-center gap-2">
-                      <SearchModal
-                        trigger={
-                          <Button variant="ghost" size="icon" className="hidden sm:inline-flex">
-                            <span className="sr-only">Search</span>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-5 w-5 text-muted-foreground"
-                            >
-                              <circle cx="11" cy="11" r="8" />
-                              <path d="m21 21-4.3-4.3" />
-                            </svg>
-                          </Button>
-                        }
-                      />
-                      <CommandMenu />
-                      <ThemeToggle />
+                ) : (
+                  <LockGate>
+                    <Sidebar />
+                    <div className="cozy-shell flex min-h-screen flex-1 flex-col">
+                      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/80 px-4 py-3 backdrop-blur md:px-6">
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground md:hidden">
+                          <MobileNav />
+                          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                            Personal Lab
+                          </span>
+                        </div>
+                        <div className="flex flex-1 items-center justify-end gap-3">
+                          <SoftDate className="hidden md:flex" />
+                          <div className="flex items-center gap-2">
+                            <SearchModal
+                              trigger={
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="hidden sm:inline-flex"
+                                >
+                                  <span className="sr-only">Search</span>
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-5 w-5 text-muted-foreground"
+                                  >
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.3-4.3" />
+                                  </svg>
+                                </Button>
+                              }
+                            />
+                            <CommandMenu />
+                            <LockButton />
+                            <ThemeToggle />
+                          </div>
+                        </div>
+                      </header>
+                      <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
                     </div>
-                  </div>
-                </header>
-                <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+                    <TimerWatcher />
+                  </LockGate>
+                )}
               </div>
-            </div>
-            <TimerWatcher />
+            </LockProvider>
           </NotificationProvider>
         </HotkeyProvider>
       </body>

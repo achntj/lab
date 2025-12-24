@@ -1,0 +1,3 @@
+export const LOCK_IDLE_MINUTES = 5;
+export const LOCK_POLL_INTERVAL_MS = 15_000;
+export const LOCK_ACTIVITY_THROTTLE_MS = 10_000;

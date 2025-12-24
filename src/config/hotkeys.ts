@@ -3,12 +3,14 @@ export type HotkeyAction =
   | "quickSearch"
   | "newNote"
   | "newTask"
-  | "toggleTheme";
+  | "toggleTheme"
+  | "lockApp";
 
 export const defaultHotkeys: Record<HotkeyAction, string> = {
   commandPalette: "mod+k",
   quickSearch: "/",
   newNote: "mod+shift+m",
   newTask: "mod+shift+b",
-  toggleTheme: "mod+shift+l",
+  toggleTheme: "mod+shift+t",
+  lockApp: "mod+shift+l",
 };

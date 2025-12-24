@@ -2,7 +2,7 @@
 
 ![Personal Lab home](/public/home.png)
 
-Desktop workspace app built with Tauri, Next.js, Tailwind, shadcn/ui, and SQLite via Prisma. Pages include Home, Tasks, Notes, Timers, Bookmarks, Subscriptions, and a global search modal with configurable hotkeys and command palette.
+Desktop workspace app built with Tauri, Next.js, Tailwind, shadcn/ui, and SQLite via Prisma. Pages include Home, Tasks, Notes, Timers, Bookmarks, Subscriptions, and a global search modal with configurable hotkeys and command palette. Includes an app lock with PIN/biometric unlock that auto-locks on launch and after a configurable idle timeout.
 
 ## Prerequisites
 

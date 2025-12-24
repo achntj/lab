@@ -3,6 +3,7 @@
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
+import { assertUnlocked } from "@/lib/lock-guard";
 import { formatDateTime, nextMonthlyOccurrence, parseDateInput, toTimeLocal } from "@/lib/datetime";
 import { createBookmarkEntry, fetchFaviconData, normalizeBookmarkCategory } from "@/lib/bookmarks";
 import { prisma } from "@/lib/prisma";
@@ -17,6 +18,7 @@ const isNotFound = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
 
 export async function createTask(formData: FormData) {
+  await assertUnlocked();
   const title = String(formData.get("title") ?? "").trim();
   if (!title) return;
 
@@ -62,6 +64,7 @@ export async function createTask(formData: FormData) {
 }
 
 export async function updateTaskStatus(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("taskId"));
   const status = String(formData.get("status") ?? "todo");
   if (!id) return;
@@ -87,6 +90,7 @@ export async function updateTaskStatus(formData: FormData) {
 }
 
 export async function updateTask(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("taskId"));
   const title = String(formData.get("title") ?? "").trim();
   const status = String(formData.get("status") ?? "todo");
@@ -130,6 +134,7 @@ export async function updateTask(formData: FormData) {
 }
 
 export async function deleteTask(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("taskId"));
   if (!id) return;
   await prisma.task.delete({ where: { id } });
@@ -139,6 +144,7 @@ export async function deleteTask(formData: FormData) {
 }
 
 export async function createNote(formData: FormData) {
+  await assertUnlocked();
   const title = String(formData.get("title") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
   if (!title || !content) return;
@@ -161,6 +167,7 @@ export async function createNote(formData: FormData) {
 }
 
 export async function updateNote(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("noteId"));
   const title = String(formData.get("title") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
@@ -185,6 +192,7 @@ export async function updateNote(formData: FormData) {
 }
 
 export async function deleteNote(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("noteId"));
   if (!id) return;
 
@@ -195,6 +203,7 @@ export async function deleteNote(formData: FormData) {
 }
 
 export async function toggleTimer(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("timerId"));
   if (!id) return;
 
@@ -231,6 +240,7 @@ export async function toggleTimer(formData: FormData) {
 }
 
 export async function createTimer(formData: FormData) {
+  await assertUnlocked();
   const label = String(formData.get("label") ?? "").trim();
   const durationMinute = Number(formData.get("durationMinute"));
   if (!label || Number.isNaN(durationMinute)) return;
@@ -257,6 +267,7 @@ export async function createTimer(formData: FormData) {
 }
 
 export async function deleteTimer(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("timerId"));
   if (!id) return;
   await prisma.timer.delete({ where: { id } });
@@ -266,6 +277,7 @@ export async function deleteTimer(formData: FormData) {
 }
 
 export async function createFinanceEntry(formData: FormData) {
+  await assertUnlocked();
   const kind = String(formData.get("kind") ?? "").toUpperCase();
   const amountRaw = Number(formData.get("amount"));
   const category = String(formData.get("category") ?? "").trim();
@@ -298,6 +310,7 @@ export async function createFinanceEntry(formData: FormData) {
 }
 
 export async function createBookmark(formData: FormData) {
+  await assertUnlocked();
   const url = String(formData.get("url") ?? "").trim();
   const category = String(formData.get("category") ?? "").trim() || null;
   if (!url) return;
@@ -309,6 +322,7 @@ export async function createBookmark(formData: FormData) {
 }
 
 export async function updateBookmark(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("bookmarkId"));
   const rawUrl = String(formData.get("url") ?? "").trim();
   const category = normalizeBookmarkCategory(String(formData.get("category") ?? ""));
@@ -350,6 +364,7 @@ export async function updateBookmark(formData: FormData) {
 }
 
 export async function deleteBookmark(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("bookmarkId"));
   if (!id) return;
   await prisma.bookmark.delete({ where: { id } });
@@ -358,6 +373,7 @@ export async function deleteBookmark(formData: FormData) {
 }
 
 export async function refreshBookmarkFavicon(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("bookmarkId"));
   if (!id) return;
   const bookmark = await prisma.bookmark.findUnique({ where: { id } });
@@ -374,6 +390,7 @@ export async function refreshBookmarkFavicon(formData: FormData) {
 }
 
 export async function refreshAllBookmarkFavicons() {
+  await assertUnlocked();
   const bookmarks = await prisma.bookmark.findMany();
   for (const bookmark of bookmarks) {
     const { faviconUrl, faviconData } = await fetchFaviconData(bookmark.url);
@@ -389,6 +406,7 @@ export async function refreshAllBookmarkFavicons() {
 }
 
 export async function createSubscription(formData: FormData) {
+  await assertUnlocked();
   const name = String(formData.get("name") ?? "").trim();
   const amount = Number(formData.get("amount"));
   const renewalDayInput = Number(formData.get("renewalDay"));
@@ -450,6 +468,7 @@ export async function createSubscription(formData: FormData) {
 }
 
 export async function updateSubscription(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("subscriptionId"));
   const name = String(formData.get("name") ?? "").trim();
   const amount = Number(formData.get("amount"));
@@ -519,6 +538,7 @@ export async function updateSubscription(formData: FormData) {
 }
 
 export async function deleteSubscription(formData: FormData) {
+  await assertUnlocked();
   const id = Number(formData.get("subscriptionId"));
   if (!id) return;
   await prisma.subscription.delete({ where: { id } }).catch((error) => {
@@ -530,6 +550,7 @@ export async function deleteSubscription(formData: FormData) {
 }
 
 export async function importBackup(formData: FormData) {
+  await assertUnlocked();
   const file = formData.get("backup");
   if (!file || !(file instanceof File)) return;
 
