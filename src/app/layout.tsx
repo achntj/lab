@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { CommandMenu } from "@/components/command-menu";
@@ -18,16 +17,6 @@ import { SearchModal } from "@/components/search/search-modal";
 import { Button } from "@/components/ui/button";
 import { SoftDate } from "@/components/soft-date";
 import { getLockState } from "@/lib/lock-state";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const themeInitScript = `
 (() => {
@@ -66,8 +55,6 @@ export default async function RootLayout({
       </head>
       <body
         className={cn(
-          geistSans.variable,
-          geistMono.variable,
           "min-h-screen bg-background font-sans text-foreground antialiased",
         )}
       >

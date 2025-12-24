@@ -133,6 +133,11 @@ export function LockProvider({
     [router, verifyPin],
   );
 
+  const unlockWithoutPin = useCallback(() => {
+    setIsLocked(false);
+    void fetch("/api/lock/unlock", { method: "POST" });
+  }, []);
+
   const triggerHardLock = useCallback(() => {
     if (!hasPin) return;
     setIsLocked(true);
@@ -215,8 +220,8 @@ export function LockProvider({
 
   useEffect(() => {
     if (!hasPin) {
-      setIsLocked(false);
-      void fetch("/api/lock/unlock", { method: "POST" });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      unlockWithoutPin();
       didInitRef.current = true;
       return;
     }
@@ -225,7 +230,7 @@ export function LockProvider({
     if (!initialLockedRef.current) {
       triggerHardLock();
     }
-  }, [hasPin, triggerHardLock]);
+  }, [hasPin, triggerHardLock, unlockWithoutPin]);
 
   useEffect(() => {
     if (!hasPin) return;

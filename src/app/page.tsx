@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/datetime";
-import { extractNoteLinks } from "@/lib/note-links";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 

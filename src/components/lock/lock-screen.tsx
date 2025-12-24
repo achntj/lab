@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,31 +27,31 @@ export function LockScreen({
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [autoAttempted, setAutoAttempted] = useState(false);
+  const autoAttemptedRef = useRef(false);
 
-  useEffect(() => {
-    if (isLocked) {
-      setPin("");
+  const runBiometric = useCallback(
+    async (failureMessage: string) => {
+      setBusy(true);
       setError(null);
+      const ok = await unlockWithBiometric();
+      if (!ok) {
+        setError(failureMessage);
+      }
       setBusy(false);
-      setAutoAttempted(false);
-    }
-  }, [isLocked]);
+    },
+    [unlockWithBiometric],
+  );
 
   useEffect(() => {
-    if (!isLocked || !hasBiometric || !biometricAvailable || autoAttempted) return;
-    setAutoAttempted(true);
-    setBusy(true);
-    unlockWithBiometric()
-      .then((ok) => {
-        if (!ok) {
-          setError("Fingerprint prompt was blocked or canceled. Try again or use your PIN.");
-        }
-      })
-      .finally(() => {
-        setBusy(false);
-      });
-  }, [autoAttempted, biometricAvailable, hasBiometric, isLocked, unlockWithBiometric]);
+    if (!isLocked || !hasBiometric || !biometricAvailable || autoAttemptedRef.current) return;
+    autoAttemptedRef.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void runBiometric("Fingerprint prompt was blocked or canceled. Try again or use your PIN.");
+  }, [biometricAvailable, hasBiometric, isLocked, runBiometric]);
+
+  const handleBiometric = useCallback(async () => {
+    await runBiometric("Fingerprint failed. Use your PIN.");
+  }, [runBiometric]);
 
   if (!isLocked || !hasPin) return null;
 
@@ -62,16 +62,6 @@ export function LockScreen({
     const ok = await unlockWithPin(pin.trim());
     if (!ok) {
       setError("Incorrect PIN. Try again.");
-    }
-    setBusy(false);
-  };
-
-  const handleBiometric = async () => {
-    setBusy(true);
-    setError(null);
-    const ok = await unlockWithBiometric();
-    if (!ok) {
-      setError("Fingerprint failed. Use your PIN.");
     }
     setBusy(false);
   };

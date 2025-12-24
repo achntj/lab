@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { createTask, deleteTask, updateTask } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -108,7 +106,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       />
 
       <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card/60 px-3 py-2">
-        <TasksFilterControls current={statusFilter} />
+        <TasksFilterControls key={statusFilter} current={statusFilter} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

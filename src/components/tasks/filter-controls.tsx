@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,6 @@ export function TasksFilterControls({ current }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState(current ?? "all");
   const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    setStatus(current ?? "all");
-  }, [current]);
 
   const apply = () => {
     startTransition(() => {

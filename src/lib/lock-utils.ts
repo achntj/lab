@@ -1,3 +1,5 @@
+export type ByteArray = Uint8Array<ArrayBuffer>;
+
 export function toBase64(bytes: Uint8Array): string {
   let binary = "";
   bytes.forEach((byte) => {
@@ -6,12 +8,12 @@ export function toBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-export function fromBase64(encoded: string): Uint8Array {
+export function fromBase64(encoded: string): ByteArray {
   const binary = atob(encoded);
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
-export function randomBytes(length: number): Uint8Array {
+export function randomBytes(length: number): ByteArray {
   const bytes = new Uint8Array(length);
   if (typeof crypto === "undefined" || !crypto.getRandomValues) {
     throw new Error("Secure random generator unavailable.");

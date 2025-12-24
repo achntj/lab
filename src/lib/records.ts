@@ -89,7 +89,7 @@ function parseDateString(str: string): Date | null {
   const monthName = clean.match(/^([a-zA-Z]+)\s+(\d{1,2})(?:,)?\s+(\d{4})$/);
   if (monthName) {
     const [, name, day, year] = monthName;
-    const m = MONTHS.find(([_num, full, short]) => {
+    const m = MONTHS.find(([, full, short]) => {
       const lower = name.toLowerCase();
       return lower === full || lower === short;
     });
