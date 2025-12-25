@@ -4,6 +4,7 @@ import path from "path";
 import { LOCK_IDLE_MINUTES } from "@/config/lock";
 import { readLockConfig } from "@/lib/lock-config";
 import { resolveDeviceId } from "@/lib/lock-device-shared";
+import { getLockRoot, LEGACY_STATE_PATH } from "@/lib/lock-paths";
 
 type LockState = {
   locked: boolean;
@@ -23,11 +24,8 @@ type LockStateFile = {
   updatedAt: string;
 };
 
-const LOCK_ROOT = path.join(process.cwd(), "Library", "lock");
-const LEGACY_STATE_PATH = path.join(process.cwd(), "Library", "lock-state.json");
-
 function getStatePath(deviceId?: string | null) {
-  return path.join(LOCK_ROOT, resolveDeviceId(deviceId), "state.json");
+  return path.join(getLockRoot(), resolveDeviceId(deviceId), "state.json");
 }
 
 async function readStateFile(filePath: string): Promise<Omit<LockState, "enabled"> | null> {

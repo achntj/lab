@@ -2,17 +2,15 @@ import { promises as fs } from "fs";
 import path from "path";
 
 import { resolveDeviceId } from "@/lib/lock-device-shared";
+import { getLockRoot, LEGACY_CONFIG_PATH } from "@/lib/lock-paths";
 
 type LockConfig = {
   enabled: boolean;
   updatedAt: string;
 };
 
-const LOCK_ROOT = path.join(process.cwd(), "Library", "lock");
-const LEGACY_CONFIG_PATH = path.join(process.cwd(), "Library", "lock.json");
-
 function getConfigPath(deviceId?: string | null) {
-  return path.join(LOCK_ROOT, resolveDeviceId(deviceId), "config.json");
+  return path.join(getLockRoot(), resolveDeviceId(deviceId), "config.json");
 }
 
 async function readConfigFile(filePath: string): Promise<LockConfig | null> {
