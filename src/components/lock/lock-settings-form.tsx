@@ -174,8 +174,8 @@ export function LockSettingsForm() {
           ) : null}
         </div>
         <p className="text-xs text-muted-foreground">
-          PIN is hashed locally with PBKDF2 and stored on this device. There is no recovery if you
-          forget it.
+          PIN is hashed with PBKDF2 and stored on this device. There is no recovery if you forget
+          it.
         </p>
       </form>
 

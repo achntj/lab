@@ -3,6 +3,7 @@ import path from "path";
 
 import { LOCK_IDLE_MINUTES } from "@/config/lock";
 import { readLockConfig } from "@/lib/lock-config";
+import { resolveDeviceId } from "@/lib/lock-device-shared";
 
 type LockState = {
   locked: boolean;
@@ -22,29 +23,49 @@ type LockStateFile = {
   updatedAt: string;
 };
 
-const STATE_PATH = path.join(process.cwd(), "Library", "lock-state.json");
+const LOCK_ROOT = path.join(process.cwd(), "Library", "lock");
+const LEGACY_STATE_PATH = path.join(process.cwd(), "Library", "lock-state.json");
 
-async function readStoredState(): Promise<Omit<LockState, "enabled">> {
+function getStatePath(deviceId?: string | null) {
+  return path.join(LOCK_ROOT, resolveDeviceId(deviceId), "state.json");
+}
+
+async function readStateFile(filePath: string): Promise<Omit<LockState, "enabled"> | null> {
   try {
-    const raw = await fs.readFile(STATE_PATH, "utf8");
+    const raw = await fs.readFile(filePath, "utf8");
     const parsed = JSON.parse(raw) as Partial<LockStateFile>;
     const locked = typeof parsed.locked === "boolean" ? parsed.locked : DEFAULT_STATE.locked;
     const lastActivityAt =
       typeof parsed.lastActivityAt === "number" ? parsed.lastActivityAt : DEFAULT_STATE.lastActivityAt;
     return { locked, lastActivityAt };
   } catch {
-    return { locked: DEFAULT_STATE.locked, lastActivityAt: DEFAULT_STATE.lastActivityAt };
+    return null;
   }
 }
 
-async function writeStoredState(state: Omit<LockState, "enabled">) {
+async function readStoredState(deviceId?: string | null): Promise<Omit<LockState, "enabled">> {
+  const devicePath = getStatePath(deviceId);
+  const state = await readStateFile(devicePath);
+  if (state) return state;
+
+  const legacy = await readStateFile(LEGACY_STATE_PATH);
+  if (legacy) {
+    await writeStoredState(deviceId, legacy);
+    return legacy;
+  }
+
+  return { locked: DEFAULT_STATE.locked, lastActivityAt: DEFAULT_STATE.lastActivityAt };
+}
+
+async function writeStoredState(deviceId: string | null | undefined, state: Omit<LockState, "enabled">) {
   const payload: LockStateFile = {
     locked: state.locked,
     lastActivityAt: state.lastActivityAt,
     updatedAt: new Date().toISOString(),
   };
-  await fs.mkdir(path.dirname(STATE_PATH), { recursive: true });
-  await fs.writeFile(STATE_PATH, JSON.stringify(payload, null, 2), "utf8");
+  const statePath = getStatePath(deviceId);
+  await fs.mkdir(path.dirname(statePath), { recursive: true });
+  await fs.writeFile(statePath, JSON.stringify(payload, null, 2), "utf8");
 }
 
 function applyIdleTimeout(state: Omit<LockState, "enabled">): Omit<LockState, "enabled"> {
@@ -59,61 +80,61 @@ function applyIdleTimeout(state: Omit<LockState, "enabled">): Omit<LockState, "e
   return state;
 }
 
-async function isLockEnabled(): Promise<boolean> {
-  const config = await readLockConfig();
+async function isLockEnabled(deviceId?: string | null): Promise<boolean> {
+  const config = await readLockConfig(deviceId);
   return Boolean(config?.enabled);
 }
 
-export async function getLockState(): Promise<LockState> {
-  const enabled = await isLockEnabled();
+export async function getLockState(deviceId?: string | null): Promise<LockState> {
+  const enabled = await isLockEnabled(deviceId);
   if (!enabled) {
-    await writeStoredState({ locked: false, lastActivityAt: null });
+    await writeStoredState(deviceId, { locked: false, lastActivityAt: null });
     return { locked: false, lastActivityAt: null, enabled: false };
   }
-  const store = await readStoredState();
+  const store = await readStoredState(deviceId);
   const next = applyIdleTimeout(store);
   if (next.locked !== store.locked || next.lastActivityAt !== store.lastActivityAt) {
-    await writeStoredState(next);
+    await writeStoredState(deviceId, next);
   }
   return { ...next, enabled };
 }
 
-export async function markActivity(): Promise<LockState> {
-  const enabled = await isLockEnabled();
+export async function markActivity(deviceId?: string | null): Promise<LockState> {
+  const enabled = await isLockEnabled(deviceId);
   if (!enabled) {
-    await writeStoredState({ locked: false, lastActivityAt: null });
+    await writeStoredState(deviceId, { locked: false, lastActivityAt: null });
     return { locked: false, lastActivityAt: null, enabled: false };
   }
-  const store = await readStoredState();
+  const store = await readStoredState(deviceId);
   const next = { ...store };
   if (!next.locked) {
     next.lastActivityAt = Date.now();
   }
   const withIdle = applyIdleTimeout(next);
   if (withIdle.locked !== store.locked || withIdle.lastActivityAt !== store.lastActivityAt) {
-    await writeStoredState(withIdle);
+    await writeStoredState(deviceId, withIdle);
   }
   return { ...withIdle, enabled };
 }
 
-export async function lockNow(): Promise<LockState> {
-  const enabled = await isLockEnabled();
+export async function lockNow(deviceId?: string | null): Promise<LockState> {
+  const enabled = await isLockEnabled(deviceId);
   if (!enabled) {
-    await writeStoredState({ locked: false, lastActivityAt: null });
+    await writeStoredState(deviceId, { locked: false, lastActivityAt: null });
     return { locked: false, lastActivityAt: null, enabled: false };
   }
   const next = { locked: true, lastActivityAt: null };
-  await writeStoredState(next);
+  await writeStoredState(deviceId, next);
   return { ...applyIdleTimeout(next), enabled };
 }
 
-export async function unlockNow(): Promise<LockState> {
-  const enabled = await isLockEnabled();
+export async function unlockNow(deviceId?: string | null): Promise<LockState> {
+  const enabled = await isLockEnabled(deviceId);
   if (!enabled) {
-    await writeStoredState({ locked: false, lastActivityAt: null });
+    await writeStoredState(deviceId, { locked: false, lastActivityAt: null });
     return { locked: false, lastActivityAt: null, enabled: false };
   }
   const next = { locked: false, lastActivityAt: Date.now() };
-  await writeStoredState(next);
+  await writeStoredState(deviceId, next);
   return { ...applyIdleTimeout(next), enabled };
 }

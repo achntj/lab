@@ -16,6 +16,7 @@ import { MobileNav } from "@/components/mobile-nav";
 import { SearchModal } from "@/components/search/search-modal";
 import { Button } from "@/components/ui/button";
 import { SoftDate } from "@/components/soft-date";
+import { getLockDeviceId } from "@/lib/lock-device";
 import { getLockState } from "@/lib/lock-state";
 
 const themeInitScript = `
@@ -45,7 +46,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const lockState = await getLockState();
+  const lockState = await getLockState(getLockDeviceId());
   const isLocked = lockState.enabled && lockState.locked;
 
   return (

@@ -19,7 +19,22 @@ export async function createPinHash(pin: string): Promise<{ hash: string; salt: 
 
 export async function hashPinWithSalt(pin: string, salt: string): Promise<string> {
   if (typeof crypto === "undefined" || !crypto.subtle) {
-    throw new Error("Secure crypto unavailable.");
+    if (typeof window === "undefined") {
+      throw new Error("Secure crypto unavailable.");
+    }
+    try {
+      const res = await fetch("/api/lock/pin-hash", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pin, salt }),
+      });
+      if (!res.ok) throw new Error("Secure crypto unavailable.");
+      const data = (await res.json()) as { hash?: string };
+      if (!data?.hash) throw new Error("Secure crypto unavailable.");
+      return data.hash;
+    } catch {
+      throw new Error("Secure crypto unavailable.");
+    }
   }
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(

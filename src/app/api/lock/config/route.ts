@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getLockDeviceId } from "@/lib/lock-device";
 import { writeLockConfig } from "@/lib/lock-config";
 
 type LockConfigPayload = {
@@ -18,6 +19,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing enabled flag." }, { status: 400 });
   }
 
-  await writeLockConfig(payload.enabled);
+  await writeLockConfig(getLockDeviceId(), payload.enabled);
   return NextResponse.json({ enabled: payload.enabled });
 }
