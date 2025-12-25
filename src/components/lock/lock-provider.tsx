@@ -44,12 +44,15 @@ const ACTIVITY_EVENTS = ["mousemove", "mousedown", "keydown", "touchstart", "scr
 export function LockProvider({
   children,
   initialLocked = false,
+  initialVerified = true,
 }: {
   children: React.ReactNode;
   initialLocked?: boolean;
+  initialVerified?: boolean;
 }) {
   const [settings, setSettings] = useState<LockSettings>(() => loadLockSettings());
   const [isLocked, setIsLocked] = useState(initialLocked);
+  const [isVerified, setIsVerified] = useState(initialVerified);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const router = useRouter();
   const lastActivityPing = useRef(0);
@@ -72,6 +75,10 @@ export function LockProvider({
     });
   }, [hasPin, router]);
 
+  useEffect(() => {
+    setIsVerified(initialVerified);
+  }, [initialVerified]);
+
   const updateSettings = useCallback((updater: (prev: LockSettings) => LockSettings) => {
     setSettings((prev) => {
       const next = updater(prev);
@@ -88,6 +95,11 @@ export function LockProvider({
         pinHash: hash,
         pinSalt: salt,
       }));
+      void fetch("/api/lock/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ persist: true }),
+      });
     },
     [updateSettings],
   );
@@ -337,6 +349,7 @@ export function LockProvider({
       {children}
       <LockScreen
         isLocked={isLocked}
+        isVerified={isVerified}
         hasPin={hasPin}
         hasBiometric={hasBiometric}
         biometricAvailable={biometricAvailable}

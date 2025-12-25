@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 
 type LockScreenProps = {
   isLocked: boolean;
+  isVerified: boolean;
   hasPin: boolean;
   hasBiometric: boolean;
   biometricAvailable: boolean;
@@ -18,6 +19,7 @@ type LockScreenProps = {
 
 export function LockScreen({
   isLocked,
+  isVerified,
   hasPin,
   hasBiometric,
   biometricAvailable,
@@ -53,7 +55,7 @@ export function LockScreen({
     await runBiometric("Fingerprint failed. Use your PIN.");
   }, [runBiometric]);
 
-  if (!isLocked || !hasPin) return null;
+  if (!isVerified || !isLocked || !hasPin) return null;
 
   const handlePinSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
