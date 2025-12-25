@@ -6,6 +6,6 @@ import { markActivity } from "@/lib/lock-state";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const state = await markActivity(getLockDeviceId());
+  const state = await markActivity(await getLockDeviceId());
   return NextResponse.json({ locked: state.locked });
 }

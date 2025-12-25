@@ -19,6 +19,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing enabled flag." }, { status: 400 });
   }
 
-  await writeLockConfig(getLockDeviceId(), payload.enabled);
+  await writeLockConfig(await getLockDeviceId(), payload.enabled);
   return NextResponse.json({ enabled: payload.enabled });
 }

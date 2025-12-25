@@ -46,7 +46,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const lockState = await getLockState(getLockDeviceId());
+  const lockState = await getLockState(await getLockDeviceId());
   const isLocked = lockState.enabled && lockState.locked;
 
   return (

@@ -7,7 +7,7 @@ import { getLockState } from "@/lib/lock-state";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const state = await getLockState(getLockDeviceId());
+  const state = await getLockState(await getLockDeviceId());
   return NextResponse.json({
     locked: state.locked,
     enabled: state.enabled,

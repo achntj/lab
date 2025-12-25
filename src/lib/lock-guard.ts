@@ -2,7 +2,8 @@ import { getLockDeviceId } from "@/lib/lock-device";
 import { getLockState } from "@/lib/lock-state";
 
 export async function isLocked(deviceId?: string | null): Promise<boolean> {
-  const state = await getLockState(deviceId ?? getLockDeviceId());
+  const resolvedDeviceId = deviceId ?? (await getLockDeviceId());
+  const state = await getLockState(resolvedDeviceId);
   return state.enabled && state.locked;
 }
 

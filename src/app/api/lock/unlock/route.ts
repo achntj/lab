@@ -6,6 +6,6 @@ import { unlockNow } from "@/lib/lock-state";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const state = await unlockNow(getLockDeviceId());
+  const state = await unlockNow(await getLockDeviceId());
   return NextResponse.json({ locked: state.locked });
 }
