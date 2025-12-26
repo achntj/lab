@@ -58,22 +58,34 @@ export function LockProvider({
   const lastActivityPing = useRef(0);
   const initialLockedRef = useRef(initialLocked);
   const didInitRef = useRef(false);
+  // Guard against stale server responses overriding local lock transitions.
+  const mutationRef = useRef(0);
+  const pendingLockRef = useRef(false);
+  const lastConfigSyncRef = useRef(0);
 
   const hasPin = hasPinConfigured(settings);
   const hasBiometric = Boolean(settings.biometricCredentialId);
 
+  const syncLockConfig = useCallback(async (enabled: boolean) => {
+    try {
+      await fetch("/api/lock/config", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
-    void fetch("/api/lock/config", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ enabled: hasPin }),
-    }).finally(() => {
+    void syncLockConfig(hasPin).finally(() => {
       if (!hasPin && initialLockedRef.current) {
         router.refresh();
       }
     });
-  }, [hasPin, router]);
+  }, [hasPin, router, syncLockConfig]);
 
   useEffect(() => {
     setIsVerified(initialVerified);
@@ -85,6 +97,11 @@ export function LockProvider({
       saveLockSettings(next);
       return next;
     });
+  }, []);
+
+  const bumpMutation = useCallback(() => {
+    mutationRef.current += 1;
+    return mutationRef.current;
   }, []);
 
   const setPin = useCallback(
@@ -106,9 +123,11 @@ export function LockProvider({
 
   const clearPin = useCallback(() => {
     updateSettings(() => ({}));
+    bumpMutation();
+    pendingLockRef.current = false;
     setIsLocked(false);
     void fetch("/api/lock/unlock", { method: "POST" });
-  }, [updateSettings]);
+  }, [bumpMutation, updateSettings]);
 
   const verifyPin = useCallback(
     async (pin: string) => {
@@ -127,38 +146,60 @@ export function LockProvider({
     async (pin: string) => {
       const ok = await verifyPin(pin);
       if (ok) {
+        const mutationId = bumpMutation();
+        pendingLockRef.current = false;
         try {
           const res = await fetch("/api/lock/unlock", { method: "POST" });
           if (res.ok) {
             const data = (await res.json()) as { locked?: boolean };
-            setIsLocked(Boolean(data.locked));
+            if (mutationId === mutationRef.current) {
+              setIsLocked(Boolean(data.locked));
+            }
           } else {
-            setIsLocked(false);
+            if (mutationId === mutationRef.current) {
+              setIsLocked(false);
+            }
           }
         } catch {
-          setIsLocked(false);
+          if (mutationId === mutationRef.current) {
+            setIsLocked(false);
+          }
         }
         router.refresh();
       }
       return ok;
     },
-    [router, verifyPin],
+    [bumpMutation, router, verifyPin],
   );
 
   const unlockWithoutPin = useCallback(() => {
+    bumpMutation();
+    pendingLockRef.current = false;
     setIsLocked(false);
     void fetch("/api/lock/unlock", { method: "POST" });
-  }, []);
-
-  const triggerHardLock = useCallback(() => {
-    if (!hasPin) return;
-    setIsLocked(true);
-    void fetch("/api/lock/lock", { method: "POST" });
-  }, [hasPin]);
+  }, [bumpMutation]);
 
   const lock = useCallback(() => {
-    triggerHardLock();
-  }, [triggerHardLock]);
+    if (!hasPin) return;
+    const mutationId = bumpMutation();
+    pendingLockRef.current = true;
+    setIsLocked(true);
+    void (async () => {
+      await syncLockConfig(true);
+      try {
+        const res = await fetch("/api/lock/lock", { method: "POST" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { locked?: boolean };
+        if (mutationId !== mutationRef.current) return;
+        if (typeof data.locked === "boolean") {
+          pendingLockRef.current = false;
+          setIsLocked(Boolean(data.locked));
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [bumpMutation, hasPin, syncLockConfig]);
 
   useHotkey("lockApp", () => {
     lock();
@@ -189,35 +230,41 @@ export function LockProvider({
     if (!settings.biometricCredentialId) return false;
     const ok = await requestBiometricAssertion(settings.biometricCredentialId);
     if (ok) {
+      const mutationId = bumpMutation();
+      pendingLockRef.current = false;
       try {
         const res = await fetch("/api/lock/unlock", { method: "POST" });
         if (res.ok) {
           const data = (await res.json()) as { locked?: boolean };
-          setIsLocked(Boolean(data.locked));
+          if (mutationId === mutationRef.current) {
+            setIsLocked(Boolean(data.locked));
+          }
         } else {
-          setIsLocked(false);
+          if (mutationId === mutationRef.current) {
+            setIsLocked(false);
+          }
         }
       } catch {
-        setIsLocked(false);
+        if (mutationId === mutationRef.current) {
+          setIsLocked(false);
+        }
       }
       router.refresh();
     }
     return ok;
-  }, [router, settings.biometricCredentialId]);
+  }, [bumpMutation, router, settings.biometricCredentialId]);
 
   const handleServerState = useCallback(
     (locked: boolean) => {
       if (locked) {
-        if (!isLocked) {
-          triggerHardLock();
-        } else {
-          setIsLocked(true);
-        }
-      } else {
-        setIsLocked(false);
+        pendingLockRef.current = false;
+        setIsLocked(true);
+        return;
       }
+      if (pendingLockRef.current) return;
+      setIsLocked(false);
     },
-    [isLocked, triggerHardLock],
+    [],
   );
 
   useEffect(() => {
@@ -240,19 +287,29 @@ export function LockProvider({
     if (didInitRef.current) return;
     didInitRef.current = true;
     if (!initialLockedRef.current) {
-      triggerHardLock();
+      lock();
     }
-  }, [hasPin, triggerHardLock, unlockWithoutPin]);
+  }, [hasPin, lock, unlockWithoutPin]);
 
   useEffect(() => {
     if (!hasPin) return;
     let mounted = true;
     const poll = async () => {
+      const mutationId = mutationRef.current;
       try {
         const res = await fetch("/api/lock/state", { cache: "no-store" });
         if (!res.ok || !mounted) return;
-        const data = (await res.json()) as { locked?: boolean };
+        const data = (await res.json()) as { locked?: boolean; enabled?: boolean };
         if (!mounted) return;
+        if (mutationId !== mutationRef.current) return;
+        if (data.enabled === false && hasPin) {
+          const now = Date.now();
+          if (now - lastConfigSyncRef.current > LOCK_POLL_INTERVAL_MS) {
+            lastConfigSyncRef.current = now;
+            void syncLockConfig(true);
+          }
+          return;
+        }
         if (typeof data.locked === "boolean") {
           handleServerState(data.locked);
         }
@@ -266,7 +323,7 @@ export function LockProvider({
       mounted = false;
       window.clearInterval(interval);
     };
-  }, [hasPin, handleServerState]);
+  }, [hasPin, handleServerState, syncLockConfig]);
 
   useEffect(() => {
     if (!hasPin) return;
@@ -275,10 +332,12 @@ export function LockProvider({
       const now = Date.now();
       if (now - lastActivityPing.current < LOCK_ACTIVITY_THROTTLE_MS) return;
       lastActivityPing.current = now;
+      const mutationId = mutationRef.current;
       void fetch("/api/lock/activity", { method: "POST" })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (!data || typeof data.locked !== "boolean") return;
+          if (mutationId !== mutationRef.current) return;
           if (data.locked) {
             handleServerState(true);
           }
