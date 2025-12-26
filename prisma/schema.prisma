@@ -84,6 +84,8 @@ model Subscription {
   cardName      String   @default("Card")
   reminderDays  Int      @default(3)
   cadence       String   @default("monthly")
+  startDate     DateTime?
+  paused        Boolean  @default(false)
   note          String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

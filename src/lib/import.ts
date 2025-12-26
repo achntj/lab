@@ -130,6 +130,8 @@ export async function importFromBackup(payload: ExportPayload) {
           cardName: subscription.cardName,
           reminderDays: subscription.reminderDays,
           cadence: subscription.cadence,
+          startDate: toDate(subscription.startDate) ?? undefined,
+          paused: subscription.paused ?? false,
           note: subscription.note,
           createdAt: toDate(subscription.createdAt) ?? undefined,
           updatedAt: toDate(subscription.updatedAt) ?? undefined,

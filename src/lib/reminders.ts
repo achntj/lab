@@ -10,6 +10,20 @@ type ReminderInput = {
   message: string;
 };
 
+const buildStartBoundary = (startDate: Date | null, time: string) => {
+  if (!startDate) return null;
+  const [hour = 0, minute = 0] = time.split(":").map((part) => Number(part));
+  return new Date(
+    startDate.getFullYear(),
+    startDate.getMonth(),
+    startDate.getDate(),
+    Number.isNaN(hour) ? 0 : hour,
+    Number.isNaN(minute) ? 0 : minute,
+    0,
+    0,
+  );
+};
+
 export async function upsertReminder(input: ReminderInput) {
   await prisma.reminder.upsert({
     where: {
@@ -52,39 +66,74 @@ export async function fetchDueReminders() {
 
   if (!reminders.length) return [];
 
-  await prisma.reminder.updateMany({
-    where: { id: { in: reminders.map((r) => r.id) } },
-    data: { delivered: true },
-  });
+  const deliverableReminders: typeof reminders = [];
+  const subscriptionReminders: Array<{
+    reminder: (typeof reminders)[number];
+    subscription: { id: number; name: string; renewalDate: Date };
+    next: Date;
+  }> = [];
 
   for (const reminder of reminders) {
-    if (reminder.kind !== "subscription") continue;
+    if (reminder.kind !== "subscription") {
+      deliverableReminders.push(reminder);
+      continue;
+    }
+
     const subscriptionId = Number(reminder.sourceId);
     if (Number.isNaN(subscriptionId)) continue;
     const subscription = await prisma.subscription.findUnique({ where: { id: subscriptionId } });
-    if (!subscription) continue;
+    if (!subscription) {
+      await prisma.reminder.delete({ where: { id: reminder.id } });
+      continue;
+    }
+    if (subscription.paused) {
+      await prisma.reminder.delete({ where: { id: reminder.id } });
+      continue;
+    }
+
+    const renewalTime = toTimeLocal(subscription.renewalDate) || "09:00";
+    const startBoundary = buildStartBoundary(subscription.startDate, renewalTime);
+    if (startBoundary && startBoundary > now && reminder.triggerAt < startBoundary) {
+      await prisma.reminder.update({
+        where: { id: reminder.id },
+        data: { triggerAt: startBoundary, delivered: false },
+      });
+      continue;
+    }
 
     const next = nextMonthlyOccurrence(
       subscription.renewalDate.getDate(),
-      toTimeLocal(subscription.renewalDate),
+      renewalTime,
       new Date(subscription.renewalDate.getTime() + 60 * 1000),
     );
     if (!next) continue;
 
+    deliverableReminders.push(reminder);
+    subscriptionReminders.push({ reminder, subscription, next });
+  }
+
+  if (deliverableReminders.length) {
+    await prisma.reminder.updateMany({
+      where: { id: { in: deliverableReminders.map((reminder) => reminder.id) } },
+      data: { delivered: true },
+    });
+  }
+
+  for (const entry of subscriptionReminders) {
     await prisma.subscription.update({
-      where: { id: subscription.id },
-      data: { renewalDate: next },
+      where: { id: entry.subscription.id },
+      data: { renewalDate: entry.next },
     });
 
     await prisma.reminder.update({
-      where: { id: reminder.id },
+      where: { id: entry.reminder.id },
       data: {
-        triggerAt: next,
+        triggerAt: entry.next,
         delivered: false,
-        message: `${subscription.name} renews on ${formatDateTime(next)}`,
+        message: `${entry.subscription.name} payment on ${formatDateTime(entry.next)}`,
       },
     });
   }
 
-  return reminders;
+  return deliverableReminders;
 }

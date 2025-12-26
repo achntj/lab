@@ -171,8 +171,10 @@ async function main() {
         metadata: JSON.stringify({
           amount: s.amount,
           renewalDate: s.renewalDate,
+          startDate: s.startDate,
           cardName: s.cardName,
           reminderDays: s.reminderDays,
+          paused: s.paused,
         }),
       })),
       ...allFinance.map((f) => ({

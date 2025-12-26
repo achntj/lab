@@ -94,7 +94,11 @@ export default async function HomePage() {
   const [tasks, notes, subscriptions, bookmarks] = await Promise.all([
     prisma.task.findMany({ orderBy: { dueDate: "asc" }, take: 4 }),
     prisma.note.findMany({ orderBy: { updatedAt: "desc" }, take: 3 }),
-    prisma.subscription.findMany({ orderBy: { renewalDate: "asc" }, take: 4 }),
+    prisma.subscription.findMany({
+      where: { paused: false },
+      orderBy: { renewalDate: "asc" },
+      take: 4,
+    }),
     prisma.bookmark.findMany({ take: 3, orderBy: { createdAt: "desc" } }),
   ]);
 
@@ -105,8 +109,13 @@ export default async function HomePage() {
     return diff <= 1000 * 60 * 60 * 24 * 3 && diff >= 0;
   }).length;
 
-  const upcomingRenewal = subscriptions[0];
-  const monthlySpend = subscriptions
+  const nowDate = new Date(NOW);
+  const startedSubscriptions = subscriptions.filter(
+    (sub) => !sub.startDate || sub.startDate <= nowDate,
+  );
+  const displaySubscriptions = startedSubscriptions.length ? startedSubscriptions : subscriptions;
+  const upcomingRenewal = displaySubscriptions[0];
+  const monthlySpend = startedSubscriptions
     .filter((sub) => sub.cadence === "monthly")
     .reduce((acc, sub) => acc + Number(sub.amount), 0);
 
@@ -134,8 +143,8 @@ export default async function HomePage() {
           value={`$${monthlySpend.toFixed(2)}/mo`}
           hint={
             upcomingRenewal
-              ? `Next: ${upcomingRenewal.name} on ${formatDate(upcomingRenewal.renewalDate)}`
-              : "No renewals"
+              ? `Next payment: ${upcomingRenewal.name} on ${formatDate(upcomingRenewal.renewalDate)}`
+              : "No payments"
           }
         />
       </div>
@@ -206,14 +215,14 @@ export default async function HomePage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Subscriptions</CardTitle>
-              <CardDescription>Next renewals</CardDescription>
+              <CardDescription>Next payments</CardDescription>
             </div>
             <Button asChild size="sm" variant="outline">
               <Link href="/finances">Manage</Link>
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            {subscriptions.map((sub) => (
+            {displaySubscriptions.map((sub) => (
               <div
                 key={sub.id}
                 className="flex items-center justify-between rounded-lg border bg-card/60 px-3 py-2"
@@ -221,7 +230,7 @@ export default async function HomePage() {
                 <div>
                   <p className="font-medium">{sub.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    Renews {formatDate(sub.renewalDate)} · card {sub.cardName}
+                    Next payment {formatDate(sub.renewalDate)} · card {sub.cardName}
                   </p>
                 </div>
                 <Badge variant="secondary">${Number(sub.amount).toFixed(2)}</Badge>
