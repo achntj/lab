@@ -1,59 +1,72 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Props = {
   current?: string;
+  totals?: Record<string, number>;
 };
 
-export function TasksFilterControls({ current }: Props) {
+const STATUSES = [
+  { value: "all", label: "All" },
+  { value: "todo", label: "Todo" },
+  { value: "in-progress", label: "In progress" },
+  { value: "blocked", label: "Blocked" },
+  { value: "done", label: "Done" },
+];
+
+export function TasksFilterControls({ current, totals }: Props) {
   const router = useRouter();
-  const [status, setStatus] = useState(current ?? "all");
+  const status = current ?? "all";
   const [isPending, startTransition] = useTransition();
 
-  const apply = () => {
+  const apply = (next: string) => {
     startTransition(() => {
-      const qs = status && status !== "all" ? `?status=${encodeURIComponent(status)}` : "";
+      const qs = next && next !== "all" ? `?status=${encodeURIComponent(next)}` : "";
       router.replace(`/tasks${qs}`);
+      router.refresh();
     });
   };
 
   const reset = () => {
-    setStatus("all");
-    startTransition(() => {
-      router.replace("/tasks");
-    });
+    apply("all");
   };
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        apply();
-      }}
-      className="flex items-center gap-2"
-    >
-      <select
-        name="status"
-        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-        value={status}
-        onChange={(e) => setStatus(e.target.value)}
-      >
-        <option value="all">All</option>
-        <option value="todo">Todo</option>
-        <option value="in-progress">In progress</option>
-        <option value="blocked">Blocked</option>
-        <option value="done">Done</option>
-      </select>
-      <Button type="submit" size="sm" variant="secondary" disabled={isPending}>
-        {isPending ? "Filtering..." : "Filter"}
-      </Button>
+    <div className="flex flex-wrap items-center gap-2">
+      {STATUSES.map((item) => {
+        const count =
+          item.value === "all"
+            ? Object.values(totals ?? {}).reduce((sum, value) => sum + value, 0)
+            : totals?.[item.value] ?? 0;
+        const isActive = status === item.value;
+
+        return (
+          <Button
+            key={item.value}
+            type="button"
+            size="sm"
+            variant={isActive ? "secondary" : "ghost"}
+            className={cn("gap-2", isActive && "text-foreground")}
+            onClick={() => apply(item.value)}
+            disabled={isPending}
+            aria-pressed={isActive}
+          >
+            <span>{item.label}</span>
+            <Badge variant="outline" className="text-[10px] font-semibold">
+              {count}
+            </Badge>
+          </Button>
+        );
+      })}
       <Button type="button" variant="ghost" size="sm" onClick={reset} disabled={isPending}>
         Reset
       </Button>
-    </form>
+    </div>
   );
 }

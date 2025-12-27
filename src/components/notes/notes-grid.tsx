@@ -1,15 +1,18 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { deleteNote, updateNote } from "@/app/actions";
 import { MarkdownPreview } from "@/components/markdown-preview";
+import { NoteMarkdownTextarea } from "@/components/notes/note-markdown-textarea";
+import { NoteTitleInput } from "@/components/notes/note-title-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -20,8 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 export type NoteLink = { title: string; kind: string; noteId?: number | null };
@@ -38,10 +39,12 @@ export type NoteWithLinks = {
 type NotesGridProps = {
   notes: NoteWithLinks[];
   titleToId: Record<string, number>;
+  noteTitles: string[];
 };
 
-export function NotesGrid({ notes, titleToId }: NotesGridProps) {
+export function NotesGrid({ notes, titleToId, noteTitles }: NotesGridProps) {
   const [openId, setOpenId] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [drafts, setDrafts] = useState<Record<number, { title: string; content: string }>>(() =>
     Object.fromEntries(notes.map((note) => [note.id, { title: note.title, content: note.content }])),
   );
@@ -49,9 +52,35 @@ export function NotesGrid({ notes, titleToId }: NotesGridProps) {
   const [isDeleting, startDelete] = useTransition();
 
   const notesById = useMemo(() => Object.fromEntries(notes.map((n) => [n.id, n])), [notes]);
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en", {
+        month: "short",
+        day: "numeric",
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    setIsEditing(false);
+  }, [openId]);
 
   const openNote = (id: number | null) => {
     setOpenId(id);
+  };
+
+  const handleCardClick = (event: React.MouseEvent<HTMLDivElement>, id: number) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("a, button")) return;
+    openNote(id);
+  };
+
+  const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, id: number) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openNote(id);
+    }
   };
 
   const handleLinkNavigate = (payload: { href?: string; title?: string }) => {
@@ -84,50 +113,152 @@ export function NotesGrid({ notes, titleToId }: NotesGridProps) {
     }));
   };
 
+  const resetDraft = (note: NoteWithLinks) => {
+    setDrafts((prev) => ({
+      ...prev,
+      [note.id]: { title: note.title, content: note.content },
+    }));
+  };
+
+  const countWords = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed ? trimmed.split(/\s+/).length : 0;
+  };
+
+  const displayedTitle = selected ? (isEditing ? draft?.title ?? selected.title : selected.title) : "";
+  const displayedContent = selected ? drafts[selected.id]?.content ?? selected.content : "";
+
+  if (!notes.length) {
+    return (
+      <Card className="border-dashed">
+        <CardHeader className="space-y-2">
+          <CardTitle className="text-lg">No notes yet</CardTitle>
+          <CardDescription>Start a note on the left to see it show up here.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {notes.map((note) => (
-          <Card
-            key={note.id}
-            className="flex cursor-pointer flex-col transition hover:border-primary/40 hover:shadow"
-            onClick={() => openNote(note.id)}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-lg">{note.title}</CardTitle>
-                <Badge variant="secondary">Note</Badge>
-              </div>
-              <CardDescription>
-                Updated{" "}
-                {new Intl.DateTimeFormat("en", {
-                  month: "short",
-                  day: "numeric",
-                }).format(new Date(note.updatedAt))}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <MarkdownPreview
-                content={note.content}
-                className="text-muted-foreground"
-                onLinkClick={handleLinkNavigate}
-              />
-            </CardContent>
-          </Card>
-        ))}
+        {notes.map((note) => {
+          const trimmed = note.content.trim();
+          const wordCount = trimmed ? trimmed.split(/\s+/).length : 0;
+          const updatedLabel = dateFormatter.format(new Date(note.updatedAt));
+          const hasRelations = note.links.length > 0 || note.backlinks.length > 0;
+
+          return (
+            <Card
+              key={note.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open note ${note.title}`}
+              className="group flex h-full cursor-pointer flex-col transition hover:border-primary/40 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              onClick={(event) => handleCardClick(event, note.id)}
+              onKeyDown={(event) => handleCardKeyDown(event, note.id)}
+            >
+              <CardHeader className="space-y-2 pb-2">
+                <CardTitle className="truncate text-base">{note.title}</CardTitle>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span>Updated {updatedLabel}</span>
+                  <span className="h-1 w-1 rounded-full bg-muted-foreground/50" aria-hidden="true" />
+                  <span>{wordCount ? `${wordCount} words` : "Empty note"}</span>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <div className="relative max-h-40 overflow-hidden">
+                  <MarkdownPreview
+                    content={note.content}
+                    className="space-y-1 text-sm leading-6 text-muted-foreground"
+                    onLinkClick={handleLinkNavigate}
+                  />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent" />
+                </div>
+              </CardContent>
+              <CardFooter className="flex items-center justify-between gap-2 pt-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {hasRelations ? (
+                    <>
+                      {note.links.length ? (
+                        <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+                          {note.links.length} links
+                        </Badge>
+                      ) : null}
+                      {note.backlinks.length ? (
+                        <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+                          {note.backlinks.length} backlinks
+                        </Badge>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No links yet</span>
+                  )}
+                </div>
+                <span className="text-xs font-medium text-primary/80 transition group-hover:text-primary">Open</span>
+              </CardFooter>
+            </Card>
+          );
+        })}
       </div>
 
-      <Dialog open={Boolean(openId)} onOpenChange={(open) => openNote(open ? openId : null)}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+      <Dialog
+        open={Boolean(openId)}
+        onOpenChange={(open) => {
+          if (!open) {
+            if (selected) {
+              resetDraft(selected);
+            }
+            setIsEditing(false);
+            openNote(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           {selected && draft ? (
             <>
-              <DialogHeader>
-                <DialogTitle>{selected.title}</DialogTitle>
-                <CardDescription>
-                  Edit in place, format with Markdown, and keep linking to anything using [[mentions]].
-                </CardDescription>
+              <DialogHeader className="space-y-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <DialogTitle className="text-xl">{displayedTitle}</DialogTitle>
+                    <CardDescription>
+                      Updated {dateFormatter.format(new Date(selected.updatedAt))} •{" "}
+                      {countWords(isEditing ? draft.content : displayedContent)} words
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!isEditing ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Edit note"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                        >
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                        </svg>
+                      </Button>
+                    ) : null}
+                    <DialogClose asChild>
+                      <Button type="button" variant="ghost">
+                        Close
+                      </Button>
+                    </DialogClose>
+                  </div>
+                </div>
               </DialogHeader>
-              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              {isEditing ? (
                 <form
                   action={(formData) => {
                     formData.set("noteId", String(selected.id));
@@ -135,29 +266,52 @@ export function NotesGrid({ notes, titleToId }: NotesGridProps) {
                     formData.set("content", draft.content);
                     startTransition(async () => {
                       await updateNote(formData);
+                      setIsEditing(false);
                     });
                   }}
-                  className="space-y-3"
+                  className="space-y-4"
                 >
                   <input type="hidden" name="noteId" value={selected.id} />
-                  <Input
-                    name="title"
-                    value={draft.title}
-                    onChange={(e) => handleDraftChange(selected.id, "title", e.target.value)}
-                    required
-                  />
-                  <Textarea
-                    name="content"
-                    value={draft.content}
-                    onChange={(e) => handleDraftChange(selected.id, "content", e.target.value)}
-                    required
-                    rows={14}
-                    className="min-h-[260px]"
-                    placeholder="Write freely in Markdown. Add lists, links [like this](https://example.com), and [[mentions]] to other notes or records."
-                  />
-                  <div className="flex items-center gap-2">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Title
+                    </label>
+                    <NoteTitleInput
+                      name="title"
+                      value={draft.title}
+                      onChange={(e) => handleDraftChange(selected.id, "title", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Markdown
+                    </label>
+                    <NoteMarkdownTextarea
+                      noteTitles={noteTitles}
+                      name="content"
+                      value={draft.content}
+                      onValueChange={(nextValue) => handleDraftChange(selected.id, "content", nextValue)}
+                      required
+                      rows={16}
+                      className="min-h-[320px]"
+                      placeholder="Write freely in Markdown. Add lists, links [like this](https://example.com), and [[mentions]] to other notes or records."
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button type="submit" disabled={isSaving}>
                       {isSaving ? "Saving..." : "Save changes"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        resetDraft(selected);
+                        setIsEditing(false);
+                      }}
+                      disabled={isSaving}
+                    >
+                      Cancel
                     </Button>
                     <Button
                       type="button"
@@ -175,22 +329,20 @@ export function NotesGrid({ notes, titleToId }: NotesGridProps) {
                     >
                       {isDeleting ? "Deleting..." : "Delete"}
                     </Button>
-                    <DialogClose asChild>
-                      <Button type="button" variant="ghost">
-                        Close
-                      </Button>
-                    </DialogClose>
                   </div>
                 </form>
-                <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
-                  <p className="text-sm font-medium text-foreground">Live preview</p>
+              ) : (
+                <div
+                  className="rounded-lg border bg-muted/20 p-4"
+                  onDoubleClick={() => setIsEditing(true)}
+                >
                   <MarkdownPreview
-                    content={draft.content}
-                    className="text-muted-foreground"
+                    content={displayedContent}
+                    className="space-y-2 text-base leading-7 text-foreground"
                     onLinkClick={handleLinkNavigate}
                   />
                 </div>
-              </div>
+              )}
               <div className="space-y-2 pt-2">
                 <LinkSection
                   title="Links"
