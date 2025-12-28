@@ -159,7 +159,9 @@ export function NotesGrid({ notes, titleToId, noteTitles }: NotesGridProps) {
               onKeyDown={(event) => handleCardKeyDown(event, note.id)}
             >
               <CardHeader className="space-y-2 pb-2">
-                <CardTitle className="truncate text-base">{note.title}</CardTitle>
+                <CardTitle className="line-clamp-2 break-words text-base">
+                  {note.title}
+                </CardTitle>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span>Updated {updatedLabel}</span>
                   <span className="h-1 w-1 rounded-full bg-muted-foreground/50" aria-hidden="true" />
@@ -176,7 +178,7 @@ export function NotesGrid({ notes, titleToId, noteTitles }: NotesGridProps) {
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent" />
                 </div>
               </CardContent>
-              <CardFooter className="flex items-center justify-between gap-2 pt-2">
+              <CardFooter className="flex flex-col items-start gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                   {hasRelations ? (
                     <>
@@ -220,13 +222,15 @@ export function NotesGrid({ notes, titleToId, noteTitles }: NotesGridProps) {
               <DialogHeader className="space-y-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
-                    <DialogTitle className="text-xl">{displayedTitle}</DialogTitle>
+                    <DialogTitle className="break-words text-xl">
+                      {displayedTitle}
+                    </DialogTitle>
                     <CardDescription>
                       Updated {dateFormatter.format(new Date(selected.updatedAt))} •{" "}
                       {countWords(isEditing ? draft.content : displayedContent)} words
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {!isEditing ? (
                       <Button
                         type="button"
@@ -379,7 +383,7 @@ function LinkSection({
   return (
     <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      {items.length ? (
+              {items.length ? (
         <div className="flex flex-wrap gap-2">
           {items.map((item, idx) => (
             <button
@@ -391,7 +395,9 @@ function LinkSection({
                 "border-border bg-background/60 hover:border-primary/50 hover:text-primary",
               )}
             >
-              <span className="font-medium">{item.title}</span>
+              <span className="max-w-[60vw] truncate font-medium sm:max-w-[240px]">
+                {item.title}
+              </span>
               <span className="text-[10px] uppercase text-muted-foreground">{item.kind}</span>
             </button>
           ))}

@@ -125,7 +125,7 @@ export default async function HomePage() {
         title="Dashboard"
         description="Overview of tasks, notes, finances, and upcoming items."
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <Button asChild variant="outline">
               <Link href="/tasks">Go to Tasks</Link>
             </Button>
@@ -151,7 +151,7 @@ export default async function HomePage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Tasks</CardTitle>
               <CardDescription>Latest priorities.</CardDescription>
@@ -164,10 +164,10 @@ export default async function HomePage() {
             {tasks.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center justify-between rounded-lg border bg-muted/40 px-4 py-3"
+                className="flex flex-col gap-2 rounded-lg border bg-muted/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div>
-                  <p className="font-medium">{task.title}</p>
+                <div className="min-w-0">
+                  <p className="break-words font-medium">{task.title}</p>
                   <p className="text-sm text-muted-foreground">
                     {task.priority} · {formatDate(task.dueDate)}
                   </p>
@@ -179,6 +179,7 @@ export default async function HomePage() {
                       : task.status === "in-progress"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground",
+                    "self-start sm:self-auto",
                   )}
                 >
                   {task.status}
@@ -188,7 +189,7 @@ export default async function HomePage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Notes</CardTitle>
               <CardDescription>Capture insights.</CardDescription>
@@ -198,7 +199,7 @@ export default async function HomePage() {
           <CardContent className="space-y-3">
             {notes.map((note) => (
               <div key={note.id} className="rounded-lg border bg-muted/30 p-3">
-                <p className="font-medium">{note.title}</p>
+                <p className="break-words font-medium">{note.title}</p>
                 <div className="space-y-2">
                   <div className="text-sm text-muted-foreground line-clamp-3 break-words whitespace-pre-line">
                     {renderNotePreview(note.content)}
@@ -212,7 +213,7 @@ export default async function HomePage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Subscriptions</CardTitle>
               <CardDescription>Next payments</CardDescription>
@@ -225,21 +226,23 @@ export default async function HomePage() {
             {displaySubscriptions.map((sub) => (
               <div
                 key={sub.id}
-                className="flex items-center justify-between rounded-lg border bg-card/60 px-3 py-2"
+                className="flex flex-col gap-2 rounded-lg border bg-card/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div>
-                  <p className="font-medium">{sub.name}</p>
-                  <p className="text-sm text-muted-foreground">
+                <div className="min-w-0">
+                  <p className="break-words font-medium">{sub.name}</p>
+                  <p className="break-words text-sm text-muted-foreground">
                     Next payment {formatDate(sub.renewalDate)} · card {sub.cardName}
                   </p>
                 </div>
-                <Badge variant="secondary">${Number(sub.amount).toFixed(2)}</Badge>
+                <Badge variant="secondary" className="self-start sm:self-auto">
+                  ${Number(sub.amount).toFixed(2)}
+                </Badge>
               </div>
             ))}
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Bookmarks</CardTitle>
               <CardDescription>Recent links</CardDescription>
@@ -254,14 +257,14 @@ export default async function HomePage() {
               return (
                 <div
                   key={bm.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border bg-muted/50 px-3 py-2"
+                  className="flex flex-col gap-2 rounded-lg border bg-muted/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{label}</p>
-                    <p className="truncate text-sm text-muted-foreground">{bm.url}</p>
+                    <p className="break-words font-medium">{label}</p>
+                    <p className="break-all text-sm text-muted-foreground">{bm.url}</p>
                   </div>
                   {bm.category ? (
-                    <Badge variant="secondary" className="shrink-0">
+                    <Badge variant="secondary" className="self-start sm:self-auto">
                       {bm.category}
                     </Badge>
                   ) : null}

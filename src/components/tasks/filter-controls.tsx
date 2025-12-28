@@ -38,7 +38,7 @@ export function TasksFilterControls({ current, totals }: Props) {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex w-full flex-nowrap items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
       {STATUSES.map((item) => {
         const count =
           item.value === "all"
@@ -52,7 +52,7 @@ export function TasksFilterControls({ current, totals }: Props) {
             type="button"
             size="sm"
             variant={isActive ? "secondary" : "ghost"}
-            className={cn("gap-2", isActive && "text-foreground")}
+            className={cn("gap-2 shrink-0", isActive && "text-foreground")}
             onClick={() => apply(item.value)}
             disabled={isPending}
             aria-pressed={isActive}
@@ -64,7 +64,14 @@ export function TasksFilterControls({ current, totals }: Props) {
           </Button>
         );
       })}
-      <Button type="button" variant="ghost" size="sm" onClick={reset} disabled={isPending}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={reset}
+        disabled={isPending}
+        className="shrink-0"
+      >
         Reset
       </Button>
     </div>

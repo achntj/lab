@@ -212,11 +212,11 @@ export function NoteMarkdownTextarea({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => handleSelect(title)}
                   className={cn(
-                    "flex w-full items-center justify-between px-3 py-2 text-left transition",
+                    "flex w-full min-w-0 items-center justify-between gap-3 px-3 py-2 text-left transition",
                     index === activeIndex ? "bg-muted/60 text-foreground" : "text-muted-foreground",
                   )}
                 >
-                  <span className="truncate">{title}</span>
+                  <span className="min-w-0 flex-1 truncate">{title}</span>
                   <span className="text-[10px] uppercase">[[</span>
                 </button>
               </li>

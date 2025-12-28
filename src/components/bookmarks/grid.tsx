@@ -66,7 +66,7 @@ export function BookmarkGrid({ bookmarks }: { bookmarks: Bookmark[] }) {
         const label = labelFromUrl(bookmark.url);
         return (
           <div key={bookmark.id}>
-            <div className="flex w-full items-center gap-3 rounded-lg border bg-card/60 px-3 py-2 transition hover:border-primary/50 hover:bg-card">
+            <div className="flex w-full min-w-0 items-center gap-3 rounded-lg border bg-card/60 px-3 py-2 transition hover:border-primary/50 hover:bg-card">
               <a
                 href={bookmark.url}
                 target="_blank"
@@ -74,12 +74,15 @@ export function BookmarkGrid({ bookmarks }: { bookmarks: Bookmark[] }) {
                 className="flex min-w-0 flex-1 items-center gap-3 text-left"
               >
                 <Favicon src={bookmark.faviconData ?? bookmark.faviconUrl} label={label} />
-                <div className="min-w-0 flex-1 space-y-0.5 overflow-hidden">
-                  <p className="truncate text-sm font-semibold text-foreground">{label}</p>
-                  <p className="truncate text-xs text-muted-foreground">{bookmark.url}</p>
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="break-words text-sm font-semibold text-foreground">{label}</p>
+                  <p className="break-all text-xs text-muted-foreground">{bookmark.url}</p>
                 </div>
                 {bookmark.category ? (
-                  <Badge variant="secondary" className="shrink-0 rounded-md px-2 py-0 text-[10px]">
+                  <Badge
+                    variant="secondary"
+                    className="max-w-[50%] truncate rounded-md px-2 py-0 text-[10px]"
+                  >
                     {bookmark.category}
                   </Badge>
                 ) : null}
@@ -112,8 +115,8 @@ export function BookmarkGrid({ bookmarks }: { bookmarks: Bookmark[] }) {
                       <Favicon src={bookmark.faviconData ?? bookmark.faviconUrl} label={label} />
                     </div>
                     <div className="min-w-0 text-sm">
-                      <p className="truncate font-medium">{label}</p>
-                      <p className="truncate text-muted-foreground">{bookmark.url}</p>
+                      <p className="break-words font-medium">{label}</p>
+                      <p className="break-all text-muted-foreground">{bookmark.url}</p>
                     </div>
                   </div>
                   <Input

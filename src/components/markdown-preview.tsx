@@ -36,7 +36,7 @@ export function MarkdownPreview({ content, className, onLinkClick }: MarkdownPre
   return (
     <div
       className={cn(
-        "space-y-2 text-sm leading-7 text-foreground [&_a]:text-foreground [&_a:hover]:text-primary [&_code]:text-foreground [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5 [&_li]:marker:text-muted-foreground [&_p]:leading-7",
+        "space-y-2 break-words break-all text-sm leading-7 text-foreground [&_a]:break-all [&_a]:text-foreground [&_a:hover]:text-primary [&_code]:break-all [&_code]:text-foreground [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5 [&_li]:marker:text-muted-foreground [&_p]:leading-7",
         className,
       )}
       onClick={handleClick}

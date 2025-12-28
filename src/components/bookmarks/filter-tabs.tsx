@@ -45,13 +45,13 @@ export function BookmarkFilters({ bookmarks, categories, defaultCategory }: Prop
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex w-full flex-nowrap items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
         <button
           type="button"
           onClick={() => setCategory("")}
           disabled={isPending}
           className={cn(
-            "rounded-full border px-3 py-1 text-xs font-semibold transition",
+            "rounded-full border px-3 py-1 text-xs font-semibold transition shrink-0",
             !selectedCategory
               ? "border-transparent bg-primary text-primary-foreground shadow"
               : "border-border bg-card text-muted-foreground hover:bg-muted",
@@ -68,7 +68,7 @@ export function BookmarkFilters({ bookmarks, categories, defaultCategory }: Prop
               onClick={() => setCategory(category)}
               disabled={isPending}
               className={cn(
-                "rounded-full border px-3 py-1 text-xs font-semibold transition",
+                "rounded-full border px-3 py-1 text-xs font-semibold transition shrink-0",
                 isActive
                   ? "border-transparent bg-primary text-primary-foreground shadow"
                   : "border-border bg-card text-muted-foreground hover:bg-muted",

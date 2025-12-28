@@ -166,9 +166,13 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
                   onSelect={() => handleSelect(res)}
                   className="flex flex-col items-start gap-1"
                 >
-                  <div className="flex w-full items-center gap-2">
+                  <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
                     <Badge className={cn(kindBadge(res.kind), "capitalize")}>{res.kind}</Badge>
-                    <Highlighted text={res.title} query={highlightedQuery} className="truncate text-sm font-semibold text-foreground" />
+                    <Highlighted
+                      text={res.title}
+                      query={highlightedQuery}
+                      className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground"
+                    />
                   </div>
                   {res.content ? (
                     <Highlighted
@@ -177,12 +181,20 @@ export function SearchModal({ trigger }: { trigger?: React.ReactNode }) {
                       className="w-full truncate text-xs text-muted-foreground"
                     />
                   ) : null}
-                  <div className="flex w-full items-center gap-2 text-[11px] text-muted-foreground">
+                  <div className="flex w-full min-w-0 flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                     <span>{res.source}</span>
                     {res.url ? (
-                      <Highlighted text={res.url} query={highlightedQuery} className="truncate text-primary" />
+                      <Highlighted
+                        text={res.url}
+                        query={highlightedQuery}
+                        className="min-w-0 flex-1 truncate text-primary"
+                      />
                     ) : null}
-                    {res.category ? <Badge variant="outline">{res.category}</Badge> : null}
+                    {res.category ? (
+                      <Badge variant="outline" className="shrink-0">
+                        {res.category}
+                      </Badge>
+                    ) : null}
                   </div>
                 </CommandItem>
               ))}

@@ -70,7 +70,7 @@ export default async function RootLayout({
                 <div className="ambient-blobs" aria-hidden />
                 <DeviceVerificationGate initialVerified={isVerified}>
                   {isLocked ? (
-                    <div className="cozy-shell flex min-h-screen flex-1 flex-col">
+                    <div className="cozy-shell flex min-h-screen min-w-0 flex-1 flex-col">
                       <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
                         <LockedPlaceholder />
                       </main>
@@ -78,7 +78,7 @@ export default async function RootLayout({
                   ) : (
                     <LockGate>
                       <Sidebar />
-                      <div className="cozy-shell flex min-h-screen flex-1 flex-col">
+                      <div className="cozy-shell flex min-h-screen min-w-0 flex-1 flex-col">
                         <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/80 px-4 py-3 backdrop-blur md:px-6">
                           <div className="flex items-center gap-3 text-sm text-muted-foreground md:hidden">
                             <MobileNav />

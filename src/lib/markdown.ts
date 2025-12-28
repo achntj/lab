@@ -26,7 +26,7 @@ function renderInline(text: string) {
       const trimmed = title.trim();
       return `<button type="button" data-wikilink="${escapeAttribute(
         trimmed,
-      )}" class="inline-flex items-center gap-1 rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-foreground">${trimmed}</button>`;
+      )}" class="inline-flex max-w-full items-center gap-1 rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-foreground break-all whitespace-normal">${trimmed}</button>`;
     })
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")

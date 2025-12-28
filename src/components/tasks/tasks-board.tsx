@@ -120,7 +120,7 @@ export function TasksBoard({ tasks }: TasksBoardProps) {
                 : `Filtered to ${STATUS_LABELS[statusFilter] ?? statusFilter}.`}
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span>Filter</span>
             <span className="h-1 w-1 rounded-full bg-muted-foreground/50" aria-hidden="true" />
             <span>Click a status to refine</span>
@@ -144,8 +144,10 @@ export function TasksBoard({ tasks }: TasksBoardProps) {
                   <DialogTrigger asChild>
                     <button className="flex w-full flex-col gap-3 px-4 py-4 text-left transition hover:bg-muted/20">
                       <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="space-y-2">
-                          <p className="text-sm font-semibold text-foreground">{task.title}</p>
+                        <div className="min-w-0 space-y-2">
+                          <p className="break-all text-sm font-semibold text-foreground">
+                            {task.title}
+                          </p>
                           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             <span className={cn("font-medium", due.tone)}>{dueLabel}</span>
                           </div>
@@ -160,7 +162,9 @@ export function TasksBoard({ tasks }: TasksBoardProps) {
                         </div>
                       </div>
                       {task.notes ? (
-                        <p className="text-xs text-muted-foreground line-clamp-2">{task.notes}</p>
+                        <p className="line-clamp-2 break-all text-xs text-muted-foreground">
+                          {task.notes}
+                        </p>
                       ) : null}
                     </button>
                   </DialogTrigger>

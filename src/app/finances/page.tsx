@@ -89,12 +89,12 @@ export default async function FinancesPage() {
               .map((sub) => {
                 const nextPayment = getNextPayment(sub);
                 return (
-                  <div key={sub.id} className="flex items-center gap-3">
+                  <div key={sub.id} className="flex items-start gap-3">
                     <div className="relative">
                       <div className="h-3 w-3 rounded-full bg-primary" />
                       <div className="absolute left-[5px] top-3 h-10 w-px bg-border last:hidden" />
                     </div>
-                    <div className="flex flex-1 items-center justify-between rounded-lg border bg-card/60 px-3 py-2">
+                    <div className="flex flex-1 flex-col gap-2 rounded-lg border bg-card/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="font-semibold">{sub.name}</p>
                         <p className="text-sm text-muted-foreground">
@@ -102,7 +102,7 @@ export default async function FinancesPage() {
                           days before
                         </p>
                       </div>
-                      <span className="text-sm font-semibold">
+                      <span className="text-sm font-semibold sm:text-right">
                         {new Intl.NumberFormat("en-US", {
                           style: "currency",
                           currency: "USD",

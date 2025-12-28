@@ -23,18 +23,21 @@ export default async function TimersPage() {
         title="Timers"
         description="Preset timers for work blocks."
         actions={
-          <form action={createTimer} className="flex items-center gap-2">
-            <Input name="label" placeholder="New timer" required className="w-40" />
+          <form
+            action={createTimer}
+            className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center"
+          >
+            <Input name="label" placeholder="New timer" required className="w-full sm:w-40" />
             <Input
               name="durationMinute"
               type="number"
               min={1}
               step={1}
               placeholder="Minutes"
-              className="w-28"
+              className="w-full sm:w-28"
               required
             />
-            <Button type="submit" size="sm">
+            <Button type="submit" size="sm" className="w-full sm:w-auto">
               Add
             </Button>
           </form>

@@ -37,8 +37,10 @@ export function HotkeySettingsForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {(Object.keys(labels) as HotkeyAction[]).map((action) => (
-        <div key={action} className="flex items-center gap-3">
-          <div className="w-48 text-sm font-medium text-foreground">{labels[action]}</div>
+        <div key={action} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="w-full text-sm font-medium text-foreground sm:w-48">
+            {labels[action]}
+          </div>
           <Input
             value={drafts[action]}
             onChange={(e) =>
@@ -47,11 +49,11 @@ export function HotkeySettingsForm() {
                 [action]: e.target.value,
               }))
             }
-            className="w-40"
+            className="w-full sm:w-40"
           />
         </div>
       ))}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button type="submit">Save hotkeys</Button>
         <Button type="button" variant="outline" onClick={handleReset}>
           Reset defaults

@@ -98,7 +98,7 @@ export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscripti
 
     return (
       <Card key={sub.id} className="flex flex-col">
-        <CardHeader className="flex items-start justify-between gap-3">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle>{sub.name}</CardTitle>
             <CardDescription>
@@ -107,7 +107,7 @@ export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscripti
             </CardDescription>
             <p className="text-xs text-muted-foreground">Card: {sub.cardName}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">{sub.cadence}</Badge>
             {sub.paused ? <Badge variant="outline">Paused</Badge> : null}
           </div>
@@ -231,7 +231,7 @@ export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscripti
               </DialogFooter>
             </form>
             <Separator />
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <span>Delete this subscription</span>
               <form action={deleteSubscription}>
                 <input type="hidden" name="subscriptionId" value={sub.id} />
@@ -255,7 +255,7 @@ export function SubscriptionBoard({ subscriptions }: { subscriptions: Subscripti
             Active billing and reminders.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Badge variant="secondary">{currentSubscriptions.length}</Badge>
           <Dialog open={newOpen} onOpenChange={setNewOpen}>
             <DialogTrigger asChild>

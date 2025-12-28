@@ -46,9 +46,9 @@ export function TimerGrid({ timers }: { timers: TimerDto[] }) {
             key={timer.id}
             className="relative flex flex-col gap-2 rounded-lg border bg-card/60 p-3 shadow-sm"
           >
-            <div className="flex items-center justify-between">
-              <p className="font-semibold">{timer.label}</p>
-              <Badge variant={timer.running ? "default" : "secondary"}>
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <p className="min-w-0 flex-1 truncate font-semibold">{timer.label}</p>
+              <Badge variant={timer.running ? "default" : "secondary"} className="shrink-0">
                 {timer.durationMinute} min
               </Badge>
             </div>
