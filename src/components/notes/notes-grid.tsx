@@ -154,12 +154,12 @@ export function NotesGrid({ notes, titleToId, noteTitles }: NotesGridProps) {
               role="button"
               tabIndex={0}
               aria-label={`Open note ${note.title}`}
-              className="group flex h-full cursor-pointer flex-col transition hover:border-primary/40 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="group flex h-full min-w-0 cursor-pointer flex-col transition hover:border-primary/40 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               onClick={(event) => handleCardClick(event, note.id)}
               onKeyDown={(event) => handleCardKeyDown(event, note.id)}
             >
               <CardHeader className="space-y-2 pb-2">
-                <CardTitle className="line-clamp-2 break-words text-base">
+                <CardTitle className="line-clamp-2 break-all text-base">
                   {note.title}
                 </CardTitle>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -168,7 +168,7 @@ export function NotesGrid({ notes, titleToId, noteTitles }: NotesGridProps) {
                   <span>{wordCount ? `${wordCount} words` : "Empty note"}</span>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1">
+              <CardContent className="flex-1 min-w-0">
                 <div className="relative max-h-40 overflow-hidden">
                   <MarkdownPreview
                     content={note.content}
@@ -222,7 +222,7 @@ export function NotesGrid({ notes, titleToId, noteTitles }: NotesGridProps) {
               <DialogHeader className="space-y-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
-                    <DialogTitle className="break-words text-xl">
+                    <DialogTitle className="break-all text-xl">
                       {displayedTitle}
                     </DialogTitle>
                     <CardDescription>

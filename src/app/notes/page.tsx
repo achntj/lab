@@ -133,8 +133,8 @@ export default async function NotesPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
-        <div className="space-y-4 lg:sticky lg:top-24">{NoteComposer}</div>
+      <div className="space-y-6">
+        <div className="space-y-4">{NoteComposer}</div>
         <div className="space-y-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>

@@ -4,15 +4,44 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HotkeySettingsForm } from "@/components/hotkeys/settings-form";
 import { LockSettingsForm } from "@/components/lock/lock-settings-form";
-import { importBackup } from "@/app/actions";
+import { getBoardImage } from "@/lib/board-image";
+import { importBackup, updateBoardImage } from "@/app/actions";
 
-export default function SettingsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const boardImage = await getBoardImage();
+  const boardSrc = boardImage
+    ? `${boardImage.src}?v=${encodeURIComponent(boardImage.updatedAt)}`
+    : null;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Settings"
         description="Download your data and configure keyboard shortcuts for navigation."
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Board image</CardTitle>
+          <CardDescription>Upload the image that fills the Board view.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {boardSrc ? (
+            <div className="overflow-hidden rounded-lg border bg-muted/20">
+              <img src={boardSrc} alt="" className="h-64 w-full object-cover" />
+            </div>
+          ) : null}
+          <form
+            action={updateBoardImage}
+            className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"
+          >
+            <Input name="boardImage" type="file" accept="image/*" required />
+            <Button type="submit">Update board</Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -38,7 +67,10 @@ export default function SettingsPage() {
           <CardDescription>Restore from a JSON backup. Existing items are kept; duplicates are skipped.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={importBackup} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <form
+            action={importBackup}
+            className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"
+          >
             <Input name="backup" type="file" accept=".json,application/json" required />
             <Button type="submit">Import backup</Button>
           </form>

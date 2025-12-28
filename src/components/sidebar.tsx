@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   CheckSquare,
   Link as LinkIcon,
+  Image as ImageIcon,
   Home,
   Bell,
   StickyNote,
@@ -29,6 +30,7 @@ export type NavItem = {
 
 export const navItems: NavItem[] = [
   { label: "Home", href: "/", icon: Home, description: "Overview" },
+  { label: "Board", href: "/board", icon: ImageIcon, description: "Vision" },
   { label: "Tasks", href: "/tasks", icon: CheckSquare, description: "Todos" },
   { label: "Notes", href: "/notes", icon: StickyNote, description: "Pages" },
   {

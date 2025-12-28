@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { assertUnlocked } from "@/lib/lock-guard";
 import { formatDateTime, nextMonthlyOccurrence, parseDateInput, toTimeLocal } from "@/lib/datetime";
 import { createBookmarkEntry, fetchFaviconData, normalizeBookmarkCategory } from "@/lib/bookmarks";
+import { saveBoardImage } from "@/lib/board-image";
 import { prisma } from "@/lib/prisma";
 import { syncNoteLinks } from "@/lib/note-links";
 import { deleteRecord, upsertRecord } from "@/lib/records";
@@ -651,6 +652,17 @@ export async function deleteSubscription(formData: FormData) {
   await deleteRecord("subscription", String(id));
   await deleteReminder("subscription", id);
   revalidate("/", "/finances", "/reminders");
+}
+
+export async function updateBoardImage(formData: FormData) {
+  await assertUnlocked();
+  const file = formData.get("boardImage");
+  if (!file || !(file instanceof File)) return;
+
+  const saved = await saveBoardImage(file);
+  if (!saved) return;
+
+  revalidate("/board", "/settings");
 }
 
 export async function importBackup(formData: FormData) {
