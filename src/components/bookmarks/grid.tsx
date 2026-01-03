@@ -75,8 +75,8 @@ export function BookmarkGrid({ bookmarks }: { bookmarks: Bookmark[] }) {
               >
                 <Favicon src={bookmark.faviconData ?? bookmark.faviconUrl} label={label} />
                 <div className="min-w-0 flex-1 space-y-0.5">
-                  <p className="break-words text-sm font-semibold text-foreground">{label}</p>
-                  <p className="break-all text-xs text-muted-foreground">{bookmark.url}</p>
+                  <p className="truncate text-sm font-semibold text-foreground">{label}</p>
+                  <p className="truncate text-xs text-muted-foreground">{bookmark.url}</p>
                 </div>
                 {bookmark.category ? (
                   <Badge
